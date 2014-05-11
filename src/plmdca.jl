@@ -1,74 +1,104 @@
 using GaussDCA
+using Optim
 
-function plmdca(nomefile::String; 
-                max_gap_fraction::Real = 0.9 , 
+immutable type PlmAlg
+    epsconv::Float64
+    epsgrad::Float64
+    epsval::Float64
+    maxit::Int
+end
+immutable type PlmVar
+    N::Int
+    M::Int
+    q::Int    
+    q2::Int
+    lambdaJ::Float64
+    lambdaH::Float64
+    Z::Array{Int,2}
+    W::Array{Float64,1}
+end
+
+function plmdca(filename::String; 
+                max_gap_fraction::Real = 0.9, 
                 theta = :auto, 
                 lambdaJ::Real=0.005, 
                 lambdaH::Real=0.01,
-                epsconv::Real=0.1,
-                maxit::Int=10,
+                epsconv::Real=0.5,
                 epsgrad::Real=1e-5,
-                epsval::Real=1e-5)
+                epsval::Real=1e-5,
+                maxit::Int=1000,
+                method::Symbol=:cg)
     
-    Z = GaussDCA.read_fasta_alignment(nomefile, max_gap_fraction)
+    W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta)
+    
+    plmalg = PlmAlg(epsconv, epsgrad,epsval,maxit)
+    plmvar = PlmVar(N,M,q,q*q,lambdaJ,lambdaH,Z,W)
+    
+    initvec = zeros(Float64,(plmvar.N - 1) * plmvar.q2 + plmvar.q)
+    Jmat = zeros(Float64,(plmvar.N - 1) * plmvar.q2 + plmvar.q, N)
+    for site = 1:N
+        function f(x::Vector)
+            val = PLsiteAndGrad!(x, site, initvec, plmvar)
+            return val
+        end
+        function g!(x::Vector, storage::Vector)
+            val = PLsiteAndGrad!(x, site, storage, plmvar)
+        end
+        @time res = optimize(f, g!, initvec, method=method, show_trace=false, ftol=plmalg.epsval,grtol=plmalg.epsgrad)
+        Jmat[:,site] = copy(res.minimum)
+    end
+    return Jmat
+end
+    
+function ReadFasta(filename::String,max_gap_fraction::Real, theta)
+    Z = GaussDCA.read_fasta_alignment(filename, max_gap_fraction)
     N, M = size(Z)
     q = int(maximum(Z))
-
+    
     q > 32 && error("parameter q=$q is too big (max 31 is allowed)")
     _, _, Meff, W = GaussDCA.compute_new_frequencies(Z, theta)
     W  ./= Meff  
     Zint = int( Z )
-    
-
-    
-    vecJ = zeros(Float64, (N-1) * q*q + q) 
-    grad = zeros(Float64, (N-1) * q*q + q) 
-    it = 1
-    
-    # function PL(vecJ)
-    #     PLsite(vecJ, site, Zint, W, q, lambdaH, lambdaJ )
-    # end
-    # function gradPL!(vecJ)
-    #     gradPLsite!(vecJ, site, Zint, W, q, lambdaH, lambdaJ, grad)
-    # end
-    normgrad = 10
-    while true && it <= maxit && normgrad > epsgrad
-        site = 1
-        val = PLsiteAndGrad!(vecJ, site, Zint, W, q, lambdaH, lambdaJ, grad)
-        vecJ -= epsconv * grad
-        normgrad = sum(grad .* grad)
-        println("it ", it, " |grad| = ", normgrad, " val = ", val)
-        it += 1
-    end
-    return Z, vecJ
+    return W, Zint,N,M,q
 end
 
-# function converge()
+function GradientDescent(site::Int, plmvar::PlmVar, plmalg::PlmAlg)
 
-#     normgrad = 10
-#     while true && it <= maxit && normgrad > epsgrad
-#         site = 1
-#         val = PLsiteAndGrad!(vecJ, site, Zint, W, q, lambdaH, lambdaJ, grad)
-#         vecJ -= epsconv * grad
-#         normgrad = sum(grad .* grad)
-#         println("it ", it, " |grad| = ", normgrad, " val = ", val)
-#         it += 1
-#     end
-# end
+    vecJ = zeros(Float64, (plmvar.N - 1) * plmvar.q2 + plmvar.q) 
+    grad = zeros(Float64, (plmvar.N - 1) * plmvar.q2 + plmvar.q) 
+    it = 1
+    normgrad = 10.
+    val=0.0
+    oldval = val
+    deltaval = 1000000.0
+    while it <= plmalg.maxit && normgrad > plmalg.epsgrad && deltaval > plmalg.epsval
+        val = PLsiteAndGrad!(vecJ, site, grad, plmvar)
+        vecJ -= plmalg.epsconv * grad
+        normgrad = sum(grad .* grad)
+        it += 1
+        deltaval = abs(oldval - val)
+        oldval = val
+    end
+    println("it ", it, " |grad| = ", normgrad, " val = ", val, " deltaval = ", deltaval/val)
+    #println("it ", it, " |grad| = ", normgrad, " val = ", val, )
+    return vecJ
+end
 
-function PLsiteAndGrad!(vecJ::Array{Float64,1}, site::Int, Z::Array{Int,2}, W::Array{Float64,1}, q::Int, lambdaH::Float64, lambdaJ::Float64, grad::Array{Float64,1} )
+function PLsiteAndGrad!(vecJ::Array{Float64,1}, site::Int, grad::Array{Float64,1}, plmvar::PlmVar)
 
     LL = length(vecJ)
-    M = length(W)
-    N = size(Z,1)
+    q2 = plmvar.q2
+    q = plmvar.q
+    N = plmvar.N
+    M = plmvar.M
+    Z = plmvar.Z
+    W = plmvar.W
 
-    q2 = q*q
-    
     for i=1:LL-q
-        grad[i] = 2.0 * lambdaJ * vecJ[i]
+        grad[i] = 2.0 * plmvar.lambdaJ * vecJ[i]
     end
     for i=(LL-q+1):LL
-       grad[i] = 2.0 * lambdaH * vecJ[i]
+       grad[i] = 2.0 * plmvar.lambdaH * vecJ[i]
     end 
 
     vecene = zeros(Float64,q)
@@ -78,7 +108,7 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1}, site::Int, Z::Array{Int,2}, W::A
     # the cast to Int is relevant: factor 10x in speed
     @inbounds begin 
         for a = 1:M       
-            fillvecene!(vecJ, Z, a, myrange, N, q, vecene)        
+            fillvecene!(vecene, vecJ, myrange,a, q, plmvar.Z)        
             norm = sumexp(vecene)
             expvecenesunorm = exp(vecene .- log(norm))
             #expvecenesunorm = exp(vecene)/norm
@@ -97,15 +127,12 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1}, site::Int, Z::Array{Int,2}, W::A
             end
         end
     end
-#    println(pseudolike)
-    pseudolike += L2norm(vecJ, lambdaJ, lambdaH, q)
+    pseudolike += L2norm(vecJ, plmvar)
     return pseudolike 
 end
 
-function fillvecene!(vecJ::Array{Float64,1}, Z::Array{Int,2}, a::Int, myrange::Array{Int,1}, N::Int, q::Int, vecene::Array{Float64,1})
-
+function fillvecene!(vecene::Array{Float64,1}, vecJ::Array{Float64,1},myrange::Array{Int,1}, a::Int, q::Int, Z::Array{Int,2})
     q2 = q*q
-
     @inbounds begin
         for l = 1:q
             offset = 0
@@ -131,20 +158,20 @@ function sumexp(vec::Array{Float64,1})
     return mysum
 end
 
-function L2norm(vec::Array{Float64,1}, lambdaJ::Float64, lambdaH::Float64,q::Int)
+function L2norm(vec::Array{Float64,1}, plmvar::PlmVar)
 
     LL = length(vec)
     mysum1 = 0.0
-    for i=1:(LL-q)
+    for i=1:(LL-plmvar.q)
         mysum1 += vec[i] * vec[i]
     end
-    mysum1 *= lambdaJ
+    mysum1 *= plmvar.lambdaJ
 
     mysum2 = 0.0
-    for i=(LL-q+1):LL
+    for i=(LL-plmvar.q+1):LL
         mysum2 += vec[i] * vec[i]
     end
-    mysum2 *= lambdaH
+    mysum2 *= plmvar.lambdaH
 
     return mysum1+mysum2
 end
