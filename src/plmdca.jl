@@ -49,36 +49,47 @@ function plmdca(filename::String;
     else
         Jmat = MinimizePL(plmalg, plmvar)
     end
-
-    return Jmat
-#    TransformToMatrix(Jmat,PlmVar)
+    J, FN = ComputeScore(Jmat, plmvar)
+    return FN
 end
     
-# function TransformToMatrix(Jmat::Array{Float64,2}, var::PlmVar)
+function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar)
 
-#     J = zeros(Float64, var.N * var.q, var.N * var.q)
-#     h = zeros(Float64, var.N * var.q)
+    q = var.q
+    N = var.N
 
+    JJ=reshape(Jmat[1:end-q,:], q,q,N-1,N)
+    Jtemp1=zeros( q,q,int(N*(N-1)/2))
+    Jtemp2=zeros( q,q,int(N*(N-1)/2))
+    l = 1
 
+    for i=1:(N-1)
+        for j=(i+1):N
+            Jtemp1[:,:,l]=JJ[:,:,j-1,i]; #J_ij as estimated from from g_i.
+            Jtemp2[:,:,l]=JJ[:,:,i,j]'; #J_ij as estimated from from g_j.
+            l=l+1;
+        end
+    end
+    
+    J1=zeros(q,q,int(N*(N-1)/2))
+    J2=zeros(q,q,int(N*(N-1)/2))
 
-#     for site=1:var.N
-#         offseti = 0
-#         for i=1:var.N
-#             if i != site
-#                 for a = 1:var.q
-#                     for b = 1:var.q
-#                         J[offseti + b]  = vecJ[offsetvecJ + a + var.q*(b-1),site]
-#                     end
-#                 end
-#             end
-#             offsetvecJ += var.q2
-#             offsetsite += var.q           
-#         end
-#         offsetsite += 
-#     end
-# end
-
-#end
+    for l=1:int(N*(N-1)/2)
+        J1[:,:,l] = Jtemp1[:,:,l]-repmat(mean(Jtemp1[:,:,l],1),q,1)-repmat(mean(Jtemp1[:,:,l],2),1,q) .+ mean(Jtemp1[:,:,l])
+        J2[:,:,l] = Jtemp2[:,:,l]-repmat(mean(Jtemp2[:,:,l],1),q,1)-repmat(mean(Jtemp2[:,:,l],2),1,q) .+ mean(Jtemp2[:,:,l])
+    end
+    J = 0.5 * ( J1 + J2 )
+    FN = zeros(Float64, N,N)
+    l = 1
+    for i=1:N-1
+        for j=i+1:N
+            FN[i,j] = vecnorm(J[:,:,l],2)
+            FN[j,i] =FN[i,j]
+            l+=1
+        end
+    end
+    return J,FN
+end
 
 
 function MinimizePL2(alg::PlmAlg, var::PlmVar)
@@ -86,7 +97,7 @@ function MinimizePL2(alg::PlmAlg, var::PlmVar)
     
     x0 = zeros(Float64,(var.N - 1) * var.q2 + var.q)
 
-    Jmat = @parallel hcat for site=1:12#var.N
+    Jmat = @parallel hcat for site=1:var.N #1:12
        function f(g, x::Vector)
             if g === nothing
                 g = zeros(Float64, length(x))
