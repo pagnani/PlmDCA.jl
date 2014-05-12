@@ -119,7 +119,7 @@ function MinimizePL(alg::PlmAlg, var::PlmVar)
    
     initvec = zeros(Float64,(var.N - 1) * var.q2 + var.q)
 
-    Jmat = @parallel hcat for site = 1:12#var.N
+    Jmat = @parallel hcat for site = 1:var.N
         function f(x::Vector)
             val = PLsiteAndGrad!(x, site, initvec, var)
             return val
@@ -193,11 +193,11 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1}, site::Int, grad::Array{Float64,1
     vecene = zeros(Float64,q)
     expvecenesunorm = zeros(Float64,q)
     pseudolike = 0.0
-    myrange = Int[tuple((1:site-1)...,(site+1:N)...)...] # concatenate tuples to vector 
+    #myrange = Int[tuple((1:site-1)...,(site+1:N)...)...] # concatenate tuples to vector 
     # the cast to Int is relevant: factor 10x in speed
     @inbounds begin 
         for a = 1:M       
-            fillvecene!(vecene, vecJ, myrange,a, q, Z)        
+            fillvecene!(vecene, vecJ,site,a, q, Z,N)        
             norm = sumexp(vecene)
             expvecenesunorm = exp(vecene .- log(norm))
             #expvecenesunorm = exp(vecene)/norm
@@ -205,30 +205,44 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1}, site::Int, grad::Array{Float64,1
             offset = 0
             
             
-            for i = myrange
+            for i = 1:site-1 #myrange
                 @simd for s = 1:q
-                    grad[ offset + s + q * ( Z[i,a] - 1 ) ] -= W[a] * ( ID(Z[site,a],  s)  -  expvecenesunorm[s])
+                    grad[ offset + s + q * ( Z[i,a] - 1 ) ] += W[a] *  expvecenesunorm[s]
                 end
+                grad[ offset + Z[site,a] + q * ( Z[i,a] - 1 ) ] -= W[a] 
                 offset += q2 
             end
-            for s = 1:q 
-                grad[ offset + s ] -= W[a] * ( ID(Z[site,a],s) - expvecenesunorm[s] )
+	    for i = site+1:N #myrange
+                @simd for s = 1:q
+                    grad[ offset + s + q * ( Z[i,a] - 1 ) ] += W[a] *  expvecenesunorm[s]
+                end
+                grad[ offset + Z[site,a] + q * ( Z[i,a] - 1 ) ] -= W[a] 
+                offset += q2 
             end
+
+            @simd for s = 1:q 
+                grad[ offset + s ] += W[a] *  expvecenesunorm[s] 
+            end
+	    grad[ offset + Z[site,a] ] -= W[a] 	
         end
     end
     pseudolike += L2norm(vecJ, plmvar)
     return pseudolike 
 end
 
-function fillvecene!(vecene::Array{Float64,1}, vecJ::Array{Float64,1},myrange::Array{Int,1}, a::Int, q::Int, sZ::DenseArray{Int,2})
+function fillvecene!(vecene::Array{Float64,1}, vecJ::Array{Float64,1},site::Int, a::Int, q::Int, sZ::DenseArray{Int,2},N::Int)
     q2 = q*q
-    
+   
     Z = sdata(sZ)
     @inbounds begin
         for l = 1:q
-            offset = 0
-            scra = 0.0
-            for i = myrange  # sum J
+            offset::Int = 0
+            scra::Float64 = 0.0
+            @simd for i = 1:site-1
+                scra += vecJ[offset + l + q * (Z[i,a]-1)] 
+            offset += q2 
+            end
+    	    @simd for i = site+1:N
                 scra += vecJ[offset + l + q * (Z[i,a]-1)] 
             offset += q2 
             end
@@ -242,7 +256,7 @@ function sumexp(vec::Array{Float64,1})
 
     mysum = 0.0
     @inbounds begin
-        for i=1:length(vec)
+        @simd for i=1:length(vec)
             mysum += exp(vec[i])
         end
     end
