@@ -1,7 +1,9 @@
 using GaussDCA
 using Optim
+using OptionsMod
 
 immutable type PlmAlg
+    method::Symbol
     epsconv::Float64
     epsgrad::Float64
     epsval::Float64
@@ -14,8 +16,17 @@ immutable type PlmVar
     q2::Int
     lambdaJ::Float64
     lambdaH::Float64
-    Z::Array{Int,2}
-    W::Array{Float64,1}
+    Z::SharedArray{Int,2}
+    W::SharedArray{Float64,1}
+    
+
+    function PlmVar(N,M,q,q2,lambdaJ, lambdaH, Z,W)
+        sZ = SharedArray(Int,size(Z))
+        sZ[:] = Z
+        sW = SharedArray(Float64,size(W))
+        sW[:] = W
+        new(N,M,q,q2,lambdaJ, lambdaH, sZ,sW)
+    end
 end
 
 function plmdca(filename::String; 
@@ -30,26 +41,59 @@ function plmdca(filename::String;
                 method::Symbol=:cg)
     
     W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta)
-    
-    plmalg = PlmAlg(epsconv, epsgrad,epsval,maxit)
+
+    plmalg = PlmAlg(method,epsconv, epsgrad,epsval,maxit)
     plmvar = PlmVar(N,M,q,q*q,lambdaJ,lambdaH,Z,W)
+
+#    Jmat = MinimizePL(plmalg, plmvar)
+    Jmat = MinimizePL2(plmalg, plmvar)
+
+    return Jmat
+end
     
-    initvec = zeros(Float64,(plmvar.N - 1) * plmvar.q2 + plmvar.q)
-    Jmat = zeros(Float64,(plmvar.N - 1) * plmvar.q2 + plmvar.q, N)
-    for site = 1:N
+
+function MinimizePL2(alg::PlmAlg, var::PlmVar)
+
+    
+    x0 = zeros(Float64,(var.N - 1) * var.q2 + var.q)
+#   Jmat  = zeros(Float64,(var.N - 1) * var.q2 + var.q, var.N)
+
+    Jmat = @parallel hcat for site=1:10
+#    for site=1:10
+       function f(g, x::Vector)
+            if g === nothing
+                g = zeros(Float64, length(x))
+            end
+            return PLsiteAndGrad!(x, site, g, var)            
+        end
+        ops = @options display=false fcountmax=alg.maxit tol=alg.epsval
+        @time x, fval, fcount, converged = cgdescent(f, x0, ops)
+#        Jmat[:,site] = x
+        x
+    end 
+    return Jmat
+end
+
+
+
+function MinimizePL(alg::PlmAlg, var::PlmVar)
+    initvec = zeros(Float64,(var.N - 1) * var.q2 + var.q)
+    Jmat = zeros(Float64,(var.N - 1) * var.q2 + var.q, var.N)
+    for site = 1:var.N
         function f(x::Vector)
-            val = PLsiteAndGrad!(x, site, initvec, plmvar)
+            val = PLsiteAndGrad!(x, site, initvec, var)
             return val
         end
         function g!(x::Vector, storage::Vector)
-            val = PLsiteAndGrad!(x, site, storage, plmvar)
+            val = PLsiteAndGrad!(x, site, storage, var)
         end
-        @time res = optimize(f, g!, initvec, method=method, show_trace=false, ftol=plmalg.epsval,grtol=plmalg.epsgrad)
+        @time res = optimize(f, g!, initvec, method=alg.method, show_trace=false, ftol=alg.epsval,grtol=alg.epsgrad)
         Jmat[:,site] = copy(res.minimum)
     end
     return Jmat
 end
-    
+
+
 function ReadFasta(filename::String,max_gap_fraction::Real, theta)
     Z = GaussDCA.read_fasta_alignment(filename, max_gap_fraction)
     N, M = size(Z)
@@ -61,6 +105,10 @@ function ReadFasta(filename::String,max_gap_fraction::Real, theta)
     Zint = int( Z )
     return W, Zint,N,M,q
 end
+
+
+
+
 
 function GradientDescent(site::Int, plmvar::PlmVar, plmalg::PlmAlg)
 
@@ -91,8 +139,8 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1}, site::Int, grad::Array{Float64,1
     q = plmvar.q
     N = plmvar.N
     M = plmvar.M
-    Z = plmvar.Z
-    W = plmvar.W
+    Z = sdata(plmvar.Z)
+    W = sdata(plmvar.W)
 
     for i=1:LL-q
         grad[i] = 2.0 * plmvar.lambdaJ * vecJ[i]
@@ -108,7 +156,7 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1}, site::Int, grad::Array{Float64,1
     # the cast to Int is relevant: factor 10x in speed
     @inbounds begin 
         for a = 1:M       
-            fillvecene!(vecene, vecJ, myrange,a, q, plmvar.Z)        
+            fillvecene!(vecene, vecJ, myrange,a, q, Z)        
             norm = sumexp(vecene)
             expvecenesunorm = exp(vecene .- log(norm))
             #expvecenesunorm = exp(vecene)/norm
@@ -131,8 +179,10 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1}, site::Int, grad::Array{Float64,1
     return pseudolike 
 end
 
-function fillvecene!(vecene::Array{Float64,1}, vecJ::Array{Float64,1},myrange::Array{Int,1}, a::Int, q::Int, Z::Array{Int,2})
+function fillvecene!(vecene::Array{Float64,1}, vecJ::Array{Float64,1},myrange::Array{Int,1}, a::Int, q::Int, sZ::DenseArray{Int,2})
     q2 = q*q
+    
+    Z = sdata(sZ)
     @inbounds begin
         for l = 1:q
             offset = 0
@@ -180,7 +230,7 @@ function ID(x::Int, y::Int)
     return (x == y ? 1.0 : 0.0)
 end
 
-
+nothing 
 #a = @parallel vcat for i = 1:N
 #           i,f()
 #       end
