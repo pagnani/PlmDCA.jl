@@ -44,22 +44,57 @@ function plmdca(filename::String;
 
     plmalg = PlmAlg(method,epsconv, epsgrad,epsval,maxit)
     plmvar = PlmVar(N,M,q,q*q,lambdaJ,lambdaH,Z,W)
+    if method == :cg2 
+        Jmat = MinimizePL2(plmalg, plmvar)
+    else
+        Jmat = MinimizePL(plmalg, plmvar)
+    end
 
-#    Jmat = MinimizePL(plmalg, plmvar)
-    Jmat = MinimizePL2(plmalg, plmvar)
+#    return Jmat
+#    TransformToMatrix(Jmat,PlmVar)
 
-    return Jmat
+
+
 end
     
+# function TransformToMatrix(Jmat::Array{Float64,2}, var::PlmVar)
+
+#     J = zeros(Float64, var.N * var.q, var.N * var.q)
+#     h = zeros(Float64, var.N * var.q)
+
+
+
+#     for site=1:var.N
+#         offseti = 0
+#         for i=1:var.N
+#             if i != site
+#                 for a = 1:var.q
+#                     for b = 1:var.q
+#                         J[offseti + b]  = vecJ[offsetvecJ + a + var.q*(b-1),site]
+#                     end
+#                 end
+#             end
+#             offsetvecJ += var.q2
+#             offsetsite += var.q           
+#         end
+#         offsetsite += 
+#     end
+# end
+
+
+
+
+
+
+end
+
 
 function MinimizePL2(alg::PlmAlg, var::PlmVar)
 
     
     x0 = zeros(Float64,(var.N - 1) * var.q2 + var.q)
-#   Jmat  = zeros(Float64,(var.N - 1) * var.q2 + var.q, var.N)
 
-    Jmat = @parallel hcat for site=1:10
-#    for site=1:10
+    Jmat = @parallel hcat for site=1:12#var.N
        function f(g, x::Vector)
             if g === nothing
                 g = zeros(Float64, length(x))
@@ -67,8 +102,9 @@ function MinimizePL2(alg::PlmAlg, var::PlmVar)
             return PLsiteAndGrad!(x, site, g, var)            
         end
         ops = @options display=false fcountmax=alg.maxit tol=alg.epsval
-        @time x, fval, fcount, converged = cgdescent(f, x0, ops)
-#        Jmat[:,site] = x
+        elapstime = @elapsed  x, fval, fcount, converged = cgdescent(f, x0, ops)
+        
+        @printf("site = %d\t num-iter = %d\t pl = %.4f\t time = %.4f\n", site, fcount[end],  fval[end], elapstime)
         x
     end 
     return Jmat
@@ -77,9 +113,10 @@ end
 
 
 function MinimizePL(alg::PlmAlg, var::PlmVar)
+   
     initvec = zeros(Float64,(var.N - 1) * var.q2 + var.q)
-    Jmat = zeros(Float64,(var.N - 1) * var.q2 + var.q, var.N)
-    for site = 1:var.N
+
+    Jmat = @parallel hcat for site = 1:12#var.N
         function f(x::Vector)
             val = PLsiteAndGrad!(x, site, initvec, var)
             return val
@@ -87,8 +124,9 @@ function MinimizePL(alg::PlmAlg, var::PlmVar)
         function g!(x::Vector, storage::Vector)
             val = PLsiteAndGrad!(x, site, storage, var)
         end
-        @time res = optimize(f, g!, initvec, method=alg.method, show_trace=false, ftol=alg.epsval,grtol=alg.epsgrad)
-        Jmat[:,site] = copy(res.minimum)
+        elapstime = @elapsed res = optimize(f, g!, initvec, method=alg.method, show_trace=false, ftol=alg.epsval,grtol=alg.epsgrad)
+        @printf("site = %d\t num-iter = %d\t pl = %.4f\t time = %.4f\n", site, res.iterations,  res.f_minimum, elapstime)
+        res.minimum
     end
     return Jmat
 end
