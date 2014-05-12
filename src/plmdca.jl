@@ -50,11 +50,8 @@ function plmdca(filename::String;
         Jmat = MinimizePL(plmalg, plmvar)
     end
 
-#    return Jmat
+    return Jmat
 #    TransformToMatrix(Jmat,PlmVar)
-
-
-
 end
     
 # function TransformToMatrix(Jmat::Array{Float64,2}, var::PlmVar)
@@ -81,12 +78,7 @@ end
 #     end
 # end
 
-
-
-
-
-
-end
+#end
 
 
 function MinimizePL2(alg::PlmAlg, var::PlmVar)
