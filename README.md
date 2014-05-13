@@ -2,7 +2,20 @@ plmdca.jl
 ========
 
 Pseudo-likelihood maximization in [Julia](http://julialang.org). The
-detail of the algorithm can be found at http://plmdca.csc.kth.se/
+detail of the algorithm can be found at http://plmdca.csc.kth.se/. If
+you use this algorithm you should cite:
+
+1. M. Ekeberg, C. Lovkvist, Y. Lan, M. Weigt, E. Aurell, Improved
+   contact prediction in proteins: Using pseudolikelihoods to infer Potts
+   models, Phys. Rev. E 87, 012707 (2013)
+
+2. M. Ekeberg, T. Hartonen, E. Aurell, Fast pseudolikelihood
+   maximization for direct-coupling analysis of protein structure from
+   many homologous amino-acid sequences, arXiv:1401.4832 (supplementary
+   material)
+
+The present software is just a reimplementation of the original MATLAB
+[software](http://plmdca.csc.kth.se) in Julia.
 
 Overview
 --------
@@ -24,9 +37,8 @@ It requires the installation of:
 julia> addprocs(nprocs)
 julia> @everywhere dlopen("libstdc++",RTLD_GLOBAL)
 julia> require("plmdca.jl")
-```    
+```
 For Linuxes the installation of NLopt should be smooth.
-
 2. [GaussDCA](https://github.com/carlobaldassi/GaussDCA.jl).
 
 Not tested yet on Windows.
