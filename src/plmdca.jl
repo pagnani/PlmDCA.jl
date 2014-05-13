@@ -1,6 +1,7 @@
 using GaussDCA
 using Optim
 using OptionsMod
+using NLopt
 
 immutable type PlmAlg
     method::Symbol
@@ -38,21 +39,41 @@ function plmdca(filename::String;
                 epsgrad::Real=1e-5,
                 epsval::Real=1e-5,
                 maxit::Int=1000,
-                method::Symbol=:cg)
+                method_family::Symbol=:NLopt,
+                method::Symbol=:LD_LBFGS,
+                nproc::Int=1)
     
+
     W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta)
 
     plmalg = PlmAlg(method,epsconv, epsgrad,epsval,maxit)
     plmvar = PlmVar(N,M,q,q*q,lambdaJ,lambdaH,Z,W)
-    if method == :cg2 
-        Jmat = MinimizePL2(plmalg, plmvar)
-    else
-        Jmat = MinimizePL(plmalg, plmvar)
+    if method_family == :NLopt 
+        Jmat = MinimizePL3(plmalg, plmvar)
+    elseif method_family ==:Optim
+        if method == :cg2
+            Jmat = MinimizePL2(plmalg, plmvar)
+        else
+            Jmat = MinimizePL(plmalg, plmvar)
+        end
     end
+    
     J, FN = ComputeScore(Jmat, plmvar)
-    return FN
+   return J, FN
 end
     
+# function SetNprocs(nproc::Int)
+#     pr = procs()
+#     npr = length(pr)
+#     dpr = nproc-npr
+#     if dpr < 0
+#         rmprocs(pr[end:-1:dpr])
+#     else
+#         addprocs(dpr)
+#     end   
+# end
+
+
 function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar)
 
     q = var.q
@@ -90,8 +111,29 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar)
     end
     return J,FN
 end
+    
+function MinimizePL3(alg::PlmAlg, var::PlmVar)
 
+    x0 = zeros(Float64,(var.N - 1) * var.q2 + var.q)
 
+    Jmat = @parallel hcat for site=1:var.N #1:12
+       function f(x::Vector, g::Vector)
+            if g === nothing
+                g = zeros(Float64, length(x))
+            end
+            return PLsiteAndGrad!(x, site, g, var)            
+        end
+
+        opt = Opt(alg.method, length(x0))
+        ftol_abs!(opt::Opt, alg.epsval)
+        min_objective!(opt, f)
+        elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
+        @printf("site = %d\t pl = %.4f\t time = %.4f\n", site, minf, elapstime)
+#        @printf("site = %d\t num-iter = %d\t pl = %.4f\t time = %.4f\n", site, fcount[end],  fval[end], elapstime)
+        minx
+    end 
+    return Jmat
+end
 function MinimizePL2(alg::PlmAlg, var::PlmVar)
 
     
