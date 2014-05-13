@@ -1,15 +1,12 @@
 using GaussDCA
-using Optim
-using OptionsMod
 using NLopt
 
 immutable type PlmAlg
-    method::Symbol
+    verbose::Bool
     epsconv::Float64
-    epsgrad::Float64
-    epsval::Float64
     maxit::Int
 end
+
 immutable type PlmVar
     N::Int
     M::Int
@@ -19,7 +16,6 @@ immutable type PlmVar
     lambdaH::Float64
     Z::SharedArray{Int,2}
     W::SharedArray{Float64,1}
-    
 
     function PlmVar(N,M,q,q2,lambdaJ, lambdaH, Z,W)
         sZ = SharedArray(Int,size(Z))
@@ -35,44 +31,24 @@ function plmdca(filename::String;
                 theta = :auto, 
                 lambdaJ::Real=0.005, 
                 lambdaH::Real=0.01,
-                epsconv::Real=0.5,
-                epsgrad::Real=1e-5,
-                epsval::Real=1e-5,
+                epsconv::Real=1.0e-5,
                 maxit::Int=1000,
-                method_family::Symbol=:NLopt,
-                method::Symbol=:LD_LBFGS,
-                nproc::Int=1)
+                verbose::Bool=true)
     
-
     W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta)
 
-    plmalg = PlmAlg(method,epsconv, epsgrad,epsval,maxit)
+    plmalg = PlmAlg(verbose, epsconv ,maxit)
     plmvar = PlmVar(N,M,q,q*q,lambdaJ,lambdaH,Z,W)
-    if method_family == :NLopt 
-        Jmat = MinimizePL3(plmalg, plmvar)
-    elseif method_family ==:Optim
-        if method == :cg2
-            Jmat = MinimizePL2(plmalg, plmvar)
-        else
-            Jmat = MinimizePL(plmalg, plmvar)
-        end
-    end
-    
+
+    Jmat = MinimizePL(plmalg, plmvar)
+
     J, FN = ComputeScore(Jmat, plmvar)
-   return J, FN
+
+
+
+    return J, FN
 end
     
-# function SetNprocs(nproc::Int)
-#     pr = procs()
-#     npr = length(pr)
-#     dpr = nproc-npr
-#     if dpr < 0
-#         rmprocs(pr[end:-1:dpr])
-#     else
-#         addprocs(dpr)
-#     end   
-# end
-
 
 function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar)
 
@@ -109,73 +85,34 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar)
             l+=1
         end
     end
+    FN=GaussDCA.correct_APC(FN)
     return J,FN
 end
-    
-function MinimizePL3(alg::PlmAlg, var::PlmVar)
+
+function MinimizePL(alg::PlmAlg, var::PlmVar)
 
     x0 = zeros(Float64,(var.N - 1) * var.q2 + var.q)
 
     Jmat = @parallel hcat for site=1:var.N #1:12
-       function f(x::Vector, g::Vector)
+        function f(x::Vector, g::Vector)
             if g === nothing
                 g = zeros(Float64, length(x))
             end
             return PLsiteAndGrad!(x, site, g, var)            
         end
-
-        opt = Opt(alg.method, length(x0))
-        ftol_abs!(opt::Opt, alg.epsval)
+        
+        opt = Opt(:LD_LBFGS, length(x0))
+        ftol_abs!(opt, alg.epsconv)
+        maxeval!(opt, alg.maxit)
         min_objective!(opt, f)
         elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
-        @printf("site = %d\t pl = %.4f\t time = %.4f\n", site, minf, elapstime)
-#        @printf("site = %d\t num-iter = %d\t pl = %.4f\t time = %.4f\n", site, fcount[end],  fval[end], elapstime)
+        if alg.verbose 
+            @printf("site = %d\t pl = %.4f\t time = %.4f\n", site, minf, elapstime)
+        end
         minx
     end 
     return Jmat
 end
-function MinimizePL2(alg::PlmAlg, var::PlmVar)
-
-    
-    x0 = zeros(Float64,(var.N - 1) * var.q2 + var.q)
-
-    Jmat = @parallel hcat for site=1:var.N #1:12
-       function f(g, x::Vector)
-            if g === nothing
-                g = zeros(Float64, length(x))
-            end
-            return PLsiteAndGrad!(x, site, g, var)            
-        end
-        ops = @options display=false fcountmax=alg.maxit tol=alg.epsval
-        elapstime = @elapsed  x, fval, fcount, converged = cgdescent(f, x0, ops)
-        
-        @printf("site = %d\t num-iter = %d\t pl = %.4f\t time = %.4f\n", site, fcount[end],  fval[end], elapstime)
-        x
-    end 
-    return Jmat
-end
-
-
-
-function MinimizePL(alg::PlmAlg, var::PlmVar)
-   
-    initvec = zeros(Float64,(var.N - 1) * var.q2 + var.q)
-
-    Jmat = @parallel hcat for site = 1:var.N
-        function f(x::Vector)
-            val = PLsiteAndGrad!(x, site, initvec, var)
-            return val
-        end
-        function g!(x::Vector, storage::Vector)
-            val = PLsiteAndGrad!(x, site, storage, var)
-        end
-        elapstime = @elapsed res = optimize(f, g!, initvec, method=alg.method, show_trace=false, ftol=alg.epsval,grtol=alg.epsgrad)
-        @printf("site = %d\t num-iter = %d\t pl = %.4f\t time = %.4f\n", site, res.iterations,  res.f_minimum, elapstime)
-        res.minimum
-    end
-    return Jmat
-end
-
 
 function ReadFasta(filename::String,max_gap_fraction::Real, theta)
     Z = GaussDCA.read_fasta_alignment(filename, max_gap_fraction)
@@ -187,32 +124,6 @@ function ReadFasta(filename::String,max_gap_fraction::Real, theta)
     W  ./= Meff  
     Zint = int( Z )
     return W, Zint,N,M,q
-end
-
-
-
-
-
-function GradientDescent(site::Int, plmvar::PlmVar, plmalg::PlmAlg)
-
-    vecJ = zeros(Float64, (plmvar.N - 1) * plmvar.q2 + plmvar.q) 
-    grad = zeros(Float64, (plmvar.N - 1) * plmvar.q2 + plmvar.q) 
-    it = 1
-    normgrad = 10.
-    val=0.0
-    oldval = val
-    deltaval = 1000000.0
-    while it <= plmalg.maxit && normgrad > plmalg.epsgrad && deltaval > plmalg.epsval
-        val = PLsiteAndGrad!(vecJ, site, grad, plmvar)
-        vecJ -= plmalg.epsconv * grad
-        normgrad = sum(grad .* grad)
-        it += 1
-        deltaval = abs(oldval - val)
-        oldval = val
-    end
-    println("it ", it, " |grad| = ", normgrad, " val = ", val, " deltaval = ", deltaval/val)
-    #println("it ", it, " |grad| = ", normgrad, " val = ", val, )
-    return vecJ
 end
 
 function PLsiteAndGrad!(vecJ::Array{Float64,1}, site::Int, grad::Array{Float64,1}, plmvar::PlmVar)
@@ -319,15 +230,8 @@ function L2norm(vec::Array{Float64,1}, plmvar::PlmVar)
         mysum2 += vec[i] * vec[i]
     end
     mysum2 *= plmvar.lambdaH
-
+    
     return mysum1+mysum2
 end
 
-function ID(x::Int, y::Int)    
-    return (x == y ? 1.0 : 0.0)
-end
-
 nothing 
-#a = @parallel vcat for i = 1:N
-#           i,f()
-#       end
