@@ -19,11 +19,12 @@ The present software is just a reimplementation of the original MATLAB
 
 Overview
 --------
+
 The code uses [NLopt](https://github.com/JuliaOpt/NLopt.jl) which
 provides a Julia interfaces to the free/open-source [NLopt
-library](http://ab-initio.mit.edu/wiki/index.php/NLopt). The
-program can be run on multiple cores previus ``addprocs(nprocs)``
-where ``nprocs`` should be some integer number lower of equal your
+library](http://ab-initio.mit.edu/wiki/index.php/NLopt). The program
+can be run on multiple cores previus ``addprocs(nprocs)`` where
+``nprocs`` should be some integer number `np` lower or equal to your
 (physical) number of cores.
 
 Install
