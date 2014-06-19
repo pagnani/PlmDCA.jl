@@ -16,7 +16,7 @@ you use this algorithm you should cite:
 
 The present software is a Julia implementation of above mentioned
 pepers, with no reference to the original MATLAB
-[software](http://plmdca.csc.kth.se) in Julia.
+[software](http://plmdca.csc.kth.se) implementation.
 
 Overview
 --------
