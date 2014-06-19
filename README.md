@@ -14,7 +14,8 @@ you use this algorithm you should cite:
    many homologous amino-acid sequences, arXiv:1401.4832 (supplementary
    material)
 
-The present software is just a reimplementation of the original MATLAB
+The present software is a Julia implementation of above mentioned
+pepers, with no reference to the original MATLAB
 [software](http://plmdca.csc.kth.se) in Julia.
 
 Overview
