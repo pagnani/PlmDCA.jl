@@ -1,98 +1,41 @@
-using GaussDCA
-using NLopt
-
-immutable type PlmAlg
-    method::Symbol
-    verbose::Bool
-    epsconv::Float64
-    maxit::Int
-end
-
-immutable type PlmVar
-    N::Int
-    M::Int
-    q::Int    
-    q2::Int
-    lambdaJ::Float64
-    lambdaH::Float64
-    Z::SharedArray{Int,2}
-    W::SharedArray{Float64,1}
-
-    function PlmVar(N,M,q,q2,lambdaJ, lambdaH, Z,W)
-        sZ = SharedArray(Int,size(Z))
-        sZ[:] = Z
-        sW = SharedArray(Float64,size(W))
-        sW[:] = W
-        new(N,M,q,q2,lambdaJ, lambdaH, sZ,sW)
-    end
-end
-
-function plmdca(filename::String; 
+function plmdca(filename::String;
+                decimation::Bool=false,
+                fracmax::Float64 = 0.3,
+                fracdec::Float64 = 0.1,
+                remove_dups::Bool = true,
                 max_gap_fraction::Real = 0.9, 
                 theta = :auto, 
                 lambdaJ::Real=0.005, 
                 lambdaH::Real=0.01,
+                gaugecol::Int=-1,
                 epsconv::Real=1.0e-5,
                 maxit::Int=1000,
                 verbose::Bool=true,
                 method::Symbol=:LD_LBFGS)
-    
-    W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta)
+
+    W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta, remove_dups)
 
     plmalg = PlmAlg(method,verbose, epsconv ,maxit)
-    plmvar = PlmVar(N,M,q,q*q,lambdaJ,lambdaH,Z,W)
+    plmvar = PlmVar(N,M,q,q*q,gaugecol,lambdaJ,lambdaH,Z,W)
 
-    Jmat = MinimizePL(plmalg, plmvar)
 
-    J, FN = ComputeScore(Jmat, plmvar)
+    if decimation  == false
+        Jmat, pslike = MinimizePLAsym(plmalg,plmvar)
+    else
+        decvar = DecVar{2}(fracdec, fracmax, ones(Bool, (N-1)*q*q, N)) 
+        Jmat, pslike = DecimateAsym!(plmvar, plmalg, decvar)        
+    end
+    score, FNAPC, Jtensor = ComputeScore(Jmat, plmvar)
 
-    return J, FN
+    return output = PlmOut{Float64,4}(pslike, Jtensor, score)
 end
     
 
-function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar)
-
-    q = var.q
-    N = var.N
-
-    JJ=reshape(Jmat[1:end-q,:], q,q,N-1,N)
-    Jtemp1=zeros( q,q,int(N*(N-1)/2))
-    Jtemp2=zeros( q,q,int(N*(N-1)/2))
-    l = 1
-
-    for i=1:(N-1)
-        for j=(i+1):N
-            Jtemp1[:,:,l]=JJ[:,:,j-1,i]; #J_ij as estimated from from g_i.
-            Jtemp2[:,:,l]=JJ[:,:,i,j]'; #J_ij as estimated from from g_j.
-            l=l+1;
-        end
-    end
-    
-    J1=zeros(q,q,int(N*(N-1)/2))
-    J2=zeros(q,q,int(N*(N-1)/2))
-
-    for l=1:int(N*(N-1)/2)
-        J1[:,:,l] = Jtemp1[:,:,l]-repmat(mean(Jtemp1[:,:,l],1),q,1)-repmat(mean(Jtemp1[:,:,l],2),1,q) .+ mean(Jtemp1[:,:,l])
-        J2[:,:,l] = Jtemp2[:,:,l]-repmat(mean(Jtemp2[:,:,l],1),q,1)-repmat(mean(Jtemp2[:,:,l],2),1,q) .+ mean(Jtemp2[:,:,l])
-    end
-    J = 0.5 * ( J1 + J2 )
-    FN = zeros(Float64, N,N)
-    l = 1
-    for i=1:N-1
-        for j=i+1:N
-            FN[i,j] = vecnorm(J[:,:,l],2)
-            FN[j,i] =FN[i,j]
-            l+=1
-        end
-    end
-    FN=GaussDCA.correct_APC(FN)
-    return J,FN
-end
-
-function MinimizePL(alg::PlmAlg, var::PlmVar)
+function MinimizePLAsym(alg::PlmAlg, var::PlmVar)
 
     x0 = zeros(Float64,(var.N - 1) * var.q2 + var.q)
- 
+    vecps = SharedArray(Float64,var.N)
+
     Jmat = @parallel hcat for site=1:var.N #1:12
         function f(x::Vector, g::Vector)
             g === nothing && (g = zeros(Float64, length(x)))
@@ -104,21 +47,10 @@ function MinimizePL(alg::PlmAlg, var::PlmVar)
         min_objective!(opt, f)
         elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
         alg.verbose && @printf("site = %d\t pl = %.4f\t time = %.4f\n", site, minf, elapstime)
+        vecps[site] = minf
         minx
     end 
-    return Jmat
-end
-
-function ReadFasta(filename::String,max_gap_fraction::Real, theta)
-    Z = GaussDCA.read_fasta_alignment(filename, max_gap_fraction)
-    N, M = size(Z)
-    q = int(maximum(Z))
-    
-    q > 32 && error("parameter q=$q is too big (max 31 is allowed)")
-    _, _, Meff, W = GaussDCA.compute_new_frequencies(Z, theta)
-    W  ./= Meff  
-    Zint = int( Z )
-    return W, Zint,N,M,q
+    return Jmat, sum(vecps)
 end
 
 function PLsiteAndGrad!(vecJ::Array{Float64,1},  grad::Array{Float64,1}, site::Int, plmvar::PlmVar)
@@ -126,10 +58,12 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1},  grad::Array{Float64,1}, site::I
     LL = length(vecJ)
     q2 = plmvar.q2
     q = plmvar.q
+    gaugecol = plmvar.gaugecol
     N = plmvar.N
     M = plmvar.M
     Z = sdata(plmvar.Z)
     W = sdata(plmvar.W)
+
 
     for i=1:LL-q
         grad[i] = 2.0 * plmvar.lambdaJ * vecJ[i]
@@ -147,7 +81,6 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1},  grad::Array{Float64,1}, site::I
             fillvecene!(vecene, vecJ,site,a, q, Z,N)        
             norm = sumexp(vecene)
             expvecenesunorm = exp(vecene .- log(norm))
-
             pseudolike -= W[a] * ( vecene[Z[site,a]] - log(norm) )
             offset = 0         
             for i = 1:site-1 
@@ -171,27 +104,44 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1},  grad::Array{Float64,1}, site::I
 	    grad[ offset + Z[site,a] ] -= W[a] 	
         end
     end
-    pseudolike += L2norm(vecJ, plmvar)
+
+   
+
+    if 1 <= gaugecol <= q         
+        offset = 0;
+        @inbounds begin 
+            for i=1:N-1
+                for s=1:q
+                    grad[offset + gaugecol + q * (s - 1)  ] = 0.0; # Gauge!!! set gradJ[a,q] = 0
+                    grad[offset + s + q * (gaugecol - 1) ] = 0.0; # Gauge!!! set gradJ[q,a] = 0
+                end
+                offset += q2
+            end
+            grad[offset + gaugecol] = 0.0 # Gauge!!! set gradH[q] = 0
+        end
+    end
+
+    pseudolike += L2norm_asym(vecJ, plmvar)
+
     return pseudolike 
 end
 
 function fillvecene!(vecene::Array{Float64,1}, vecJ::Array{Float64,1},site::Int, a::Int, q::Int, sZ::DenseArray{Int,2},N::Int)
-    q2 = q*q
-   
-    Z = sdata(sZ)
 
+    q2 = q*q   
+    Z = sdata(sZ)
     @inbounds begin
         for l = 1:q
             offset::Int = 0
             scra::Float64 = 0.0
-            @simd for i = 1:site-1 # Begin sum_i \neq site J
+            for i = 1:site-1 # Begin sum_i \neq site J
                 scra += vecJ[offset + l + q * (Z[i,a]-1)] 
-            offset += q2 
+                offset += q2 
             end
             # skipping sum over residue site
-    	    @simd for i = site+1:N
+    	    for i = site+1:N
                 scra += vecJ[offset + l + q * (Z[i,a]-1)] 
-            offset += q2 
+                offset += q2 
             end # End sum_i \neq site J
             scra += vecJ[offset + l] # sum H 
             vecene[l] = scra
@@ -199,32 +149,26 @@ function fillvecene!(vecene::Array{Float64,1}, vecJ::Array{Float64,1},site::Int,
     end
 end
 
-function sumexp(vec::Array{Float64,1})
 
-    mysum = 0.0
-    @inbounds @simd for i=1:length(vec)
-        mysum += exp(vec[i])
-    end
-
-    return mysum
-end
-
-function L2norm(vec::Array{Float64,1}, plmvar::PlmVar)
+function L2norm_asym(vec::Array{Float64,1}, plmvar::PlmVar)
+    q = plmvar.q    
+    N = plmvar.N
+    lambdaJ = plmvar.lambdaJ
+    lambdaH = plmvar.lambdaH
 
     LL = length(vec)
+
     mysum1 = 0.0
-    @inbounds @simd for i=1:(LL-plmvar.q)
+    @inbounds @simd for i=1:(LL-q)
         mysum1 += vec[i] * vec[i]
     end
-    mysum1 *= plmvar.lambdaJ
+    mysum1 *= lambdaJ
 
     mysum2 = 0.0
-    @inbounds @simd for i=(LL-plmvar.q+1):LL
+    @inbounds @simd for i=(LL-q+1):LL
         mysum2 += vec[i] * vec[i]
     end
-    mysum2 *= plmvar.lambdaH
-    
+    mysum2 *= lambdaH
+
     return mysum1+mysum2
 end
-
-nothing 

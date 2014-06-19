@@ -1,5 +1,5 @@
-plmdca.jl
-========
+PlmDCA
+======
 
 Pseudo-likelihood maximization in [Julia](http://julialang.org). The
 detail of the algorithm can be found at http://plmdca.csc.kth.se/. If
@@ -37,24 +37,41 @@ It requires the installation of:
    hace trouble installing it read the discussion 
    [here](https://github.com/JuliaOpt/NLopt.jl/issues/6). For making
    all workers use NLopt, try the following workaround: 
+
 ```
 julia> addprocs(nprocs)
+
 julia> @everywhere dlopen("libstdc++",RTLD_GLOBAL) 
+
 julia> require("plmdca.jl") 
 ``` 
    For Linuxes the installation of NLopt should be smooth.
    
 2. [GaussDCA](https://github.com/carlobaldassi/GaussDCA.jl)/
 
+
+3. [PlmDCA] The PlmDCA module itself can be added with
+```
+julia> Pkg.clone("https://github.com/pagnani/PlmDCA/")
+```
+   
+   
 We have not tested yet the software on Windows.
 
 Usage
 ----
-To load the code just type `require("plmdca.jl")`
+To load the code just type
+```
+julia> using PlmDCA
+```
 
-The software provides one main function `plmdca(filename::String,
-...)`. This function take as input the name of a (possibly zipped)
-multiple sequence alignment in FASTA format, and returns two matrices:
+
+The software provides two main functions `plmdca(filename::String,
+...)` and `plmdcasym(filename::String,...)` (resp. the asymmetric and
+symmetric coupling version of the algorithm). Empirically it turns out
+that the asymmetric version is faster and more accurate. This function
+take as input the name of a (possibly zipped) multiple sequence
+alignment in FASTA format, and returns two matrices:
 
 * A `21 x 21 x N(N-1)/2` matrix containing the couplings that maximize
   the Pseudolikelihood function `J(ai, aj, pairij)` where `ai, aj` are
@@ -80,8 +97,19 @@ After some test we found that the best compromise betwee accuracy and
 speed is achieved by the Low Storage BFGS method `:LD_LBFGS`, which is
 the default method in the code.
 
+
+Output
+======
+The functions output a `type` (say `X`) with tree fields:
+
+*  `X.Jtensor`: the coupling matrix
+*  `X.pslike`: the pseudolikelihood
+*  `X.score`: a `(Int, Int, Float64)` vector of Tuples containing the candidate contact 
+   descending order (residue1, residue2 , score12).
+
+
 Todos 
 ----- 
 
-A lot. Make it a package.
+A lot!
 
