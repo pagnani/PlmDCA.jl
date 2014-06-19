@@ -93,11 +93,11 @@ methods):
 :NLOPT_LD_MMA, :LD_SLSQP, :LD_LBFGS, :LD_TNEWTON_PRECOND
 :LD_TNEWTON_PRECOND_RESTART, :LD_TNEWTON, :LD_VAR2, :NLOPT_LD_VAR1
 ```
-
 After some test we found that the best compromise betwee accuracy and
 speed is achieved by the Low Storage BFGS method `:LD_LBFGS`, which is
 the default method in the code.
 
+There are a lot of optional arguments that can be set. To be documented
 
 Output
 ======
@@ -105,8 +105,8 @@ The functions output a `type` (say `X`) with tree fields:
 
 *  `X.Jtensor`: the coupling matrix
 *  `X.pslike`: the pseudolikelihood
-*  `X.score`: a `(Int, Int, Float64)` vector of Tuples containing the candidate contact 
-   descending order (residue1, residue2 , score12).
+*  `X.score`: a `(Int, Int, Float64)` vector of Tuples containing the
+   candidate contact descending order (residue1, residue2 , score12).
 
 
 Todos 
