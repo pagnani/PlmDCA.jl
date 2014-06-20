@@ -3,6 +3,16 @@ immutable PlmAlg
     verbose::Bool
     epsconv::Float64
     maxit::Int
+    boolmask::Union(SharedArray{Bool,2},Nothing)
+    function PlmAlg(method,verbose, epsconv, maxit, boolmask)
+        if boolmask != nothing 
+            sboolmask = SharedArray(Bool,size(boolmask))
+            sboolmask[:] = boolmask
+            new(method, verbose, epsconv, maxit, sboolmask)
+        else
+            new(method, verbose, epsconv, maxit, nothing)
+        end
+    end
 end
 
 immutable PlmOut{T,N}
@@ -25,7 +35,7 @@ immutable PlmVar
         sZ = SharedArray(Int,size(Z))
         sZ[:] = Z
         sW = SharedArray(Float64,size(W))
-        sW[:] = W        
+        sW[:] = W
         new(N,M,q,q2,gaugecol,lambdaJ, lambdaH, sZ,sW)
     end
 end

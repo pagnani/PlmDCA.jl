@@ -1,5 +1,6 @@
 function plmdca(filename::String;
                 decimation::Bool=false,
+                boolmask::Union(Array{Bool,2},Nothing)=nothing,
                 fracmax::Float64 = 0.3,
                 fracdec::Float64 = 0.1,
                 remove_dups::Bool = true,
@@ -15,35 +16,46 @@ function plmdca(filename::String;
 
     W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta, remove_dups)
 
-    plmalg = PlmAlg(method,verbose, epsconv ,maxit)
+    boolmask != nothing && size(boolmask) != (N,N) && error("size boolmask different from ( $N, $N )")      
+
+
+    plmalg = PlmAlg(method,verbose, epsconv ,maxit, boolmask)
     plmvar = PlmVar(N,M,q,q*q,gaugecol,lambdaJ,lambdaH,Z,W)
 
 
     if decimation  == false
-        Jmat, pslike = MinimizePLAsym(plmalg,plmvar)
+        Jmat, pslike = MinimizePLAsym(plmalg,plmvar)                
     else
+        plmalg.boolmask != nothing && println("Warning: decimation with boolmask not implemented. Continuing ...")
         decvar = DecVar{2}(fracdec, fracmax, ones(Bool, (N-1)*q*q, N)) 
         Jmat, pslike = DecimateAsym!(plmvar, plmalg, decvar)        
     end
-    score, FNAPC, Jtensor = ComputeScore(Jmat, plmvar)
 
+
+    score, FNAPC, Jtensor = ComputeScore(Jmat, plmvar)
     return output = PlmOut{Float64,4}(pslike, Jtensor, score)
 end
     
 
 function MinimizePLAsym(alg::PlmAlg, var::PlmVar)
 
-    x0 = zeros(Float64,(var.N - 1) * var.q2 + var.q)
+    LL = (var.N - 1) * var.q2 + var.q
+    x0 = zeros(Float64, LL)
     vecps = SharedArray(Float64,var.N)
-
     Jmat = @parallel hcat for site=1:var.N #1:12
         function f(x::Vector, g::Vector)
             g === nothing && (g = zeros(Float64, length(x)))
             return PLsiteAndGrad!(x, g, site,  var)            
         end
+        
         opt = Opt(alg.method, length(x0))
         ftol_abs!(opt, alg.epsconv)
         maxeval!(opt, alg.maxit)
+        if alg.boolmask != nothing # constrain to zero boolmask variables
+            lb,ub=ComputeUL(alg,var,site,LL)
+            lower_bounds!(opt, lb)
+            upper_bounds!(opt, ub)
+        end
         min_objective!(opt, f)
         elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
         alg.verbose && @printf("site = %d\t pl = %.4f\t time = %.4f\n", site, minf, elapstime)
@@ -51,6 +63,37 @@ function MinimizePLAsym(alg::PlmAlg, var::PlmVar)
         minx
     end 
     return Jmat, sum(vecps)
+end
+
+function ComputeUL(alg::PlmAlg, var::PlmVar, site::Int, LL::Int)
+
+    boolmask = alg.boolmask
+    N  = var.N
+    q2 = var.q2
+    lb = -Inf * ones(Float64, LL)
+    ub =  Inf * ones(Float64, LL)
+    tiny::Float64 = 1.0e-6
+    offset::Int = 0
+
+    for i=1:site-1
+        if boolmask[i,site] == false
+            for s = 1:q2            
+                lb[offset + s] = -tiny
+                ub[offset + s] =  tiny
+            end
+        end
+        offset += q2 
+    end
+    for i=site+1:N
+        if boolmask[i, site] == false
+            for s = 1:q2            
+                lb[offset + s] = -tiny
+                ub[offset + s] =  tiny
+            end
+        end
+        offset += q2 
+    end
+    return lb,ub
 end
 
 function PLsiteAndGrad!(vecJ::Array{Float64,1},  grad::Array{Float64,1}, site::Int, plmvar::PlmVar)
@@ -172,3 +215,5 @@ function L2norm_asym(vec::Array{Float64,1}, plmvar::PlmVar)
 
     return mysum1+mysum2
 end
+
+
