@@ -1,9 +1,9 @@
 PlmDCA
 ======
 
-Pseudo-likelihood maximization in [Julia](http://julialang.org). The
-detail of the algorithm can be found at http://plmdca.csc.kth.se/. If
-you use this algorithm you should cite:
+Pseudo-likelihood maximization in [Julia](http://julialang.org). A
+complete description of the algorithm can be found at
+http://plmdca.csc.kth.se/. If you use this algorithm you should cite:
 
 1. M. Ekeberg, C. Lovkvist, Y. Lan, M. Weigt, E. Aurell, Improved
    contact prediction in proteins: Using pseudolikelihoods to infer Potts
@@ -33,24 +33,14 @@ Install
 
 It requires the installation of:
    
-1. [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl). For Mac users
-   with OS X 10.9 there are some known issues with NLopt. In case you
-   hace trouble installing it read the discussion 
-   [here](https://github.com/JuliaOpt/NLopt.jl/issues/6). For making
-   all workers use NLopt, try the following workaround: 
-
+1. [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl). 
 ```
-julia> addprocs(nprocs)
-
-julia> @everywhere dlopen("libstdc++",RTLD_GLOBAL) 
-
-julia> require("plmdca.jl") 
-``` 
-   For Linuxes the installation of NLopt should be smooth.
-   
+julia> Pkg.add("NLopt")
+```
 2. [GaussDCA](https://github.com/carlobaldassi/GaussDCA.jl)/
-
-
+```
+julia> Pkg.clone("https://github.com/carlobaldassi/GaussDCA.jl")
+```
 3. [PlmDCA] The PlmDCA module itself can be added with
 ```
 julia> Pkg.clone("https://github.com/pagnani/PlmDCA/")
@@ -60,12 +50,11 @@ julia> Pkg.clone("https://github.com/pagnani/PlmDCA/")
 We have not tested yet the software on Windows.
 
 Usage
-----
+-----
 To load the code just type
 ```
 julia> using PlmDCA
 ```
-
 
 The software provides two main functions `plmdca(filename::String,
 ...)` and `plmdcasym(filename::String,...)` (resp. the asymmetric and
@@ -81,22 +70,23 @@ methods):
 :NLOPT_LD_MMA, :LD_SLSQP, :LD_LBFGS, :LD_TNEWTON_PRECOND
 :LD_TNEWTON_PRECOND_RESTART, :LD_TNEWTON, :LD_VAR2, :NLOPT_LD_VAR1
 ```
+
 After some test we found that the best compromise betwee accuracy and
 speed is achieved by the Low Storage BFGS method `:LD_LBFGS`, which is
-the default method in the code.
+the default method in the code. The other methods can be set changing
+the default optional argument (e.g. `method=:LD_SLSQP`).
 
-There are a lot of optional arguments that can be set. To be documented
+There are more optional arguments that can be set (to be documented...).
 
 Output
 ======
-The functions output a `type` (say `X`) with 3 fields:
+The functions output a `type PlmOut` (say `X`) with 3 fields:
 
 
 *  `X.Jtensor`: the coupling matrix `J[ri,rj,i,j]` a not symmetric
 `q x q x N x N` array, where `N` is the number of residues in the
 multiple sequence alignment, and `q` is the alphabet "size" (typically
 21 for proteins).
-    
 *  `X.pslike`: the pseudolikelihood
 *  `X.score`: a `(Int, Int, Float64)` vector of Tuples containing the
    candidate contact descending order (residue1, residue2 , score12).
