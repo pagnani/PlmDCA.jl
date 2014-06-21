@@ -1,4 +1,4 @@
-FastaIO.jl is licensed under the MIT License:
+PlmDCA.jl is licensed under the MIT License:
 
 Copyright (c) 2014: Andrea Pagnani, Christoph Feinauer
 

@@ -32,16 +32,16 @@ Install
 -------
 
 It requires the installation of:
-   
-1. [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl). 
+
+* [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl). 
 ```
 julia> Pkg.add("NLopt")
 ```
-2. [GaussDCA](https://github.com/carlobaldassi/GaussDCA.jl)/
+* [GaussDCA](https://github.com/carlobaldassi/GaussDCA.jl)
 ```
 julia> Pkg.clone("https://github.com/carlobaldassi/GaussDCA.jl")
 ```
-3. [PlmDCA] The PlmDCA module itself can be added with
+* [PlmDCA] The PlmDCA module itself can be added with
 ```
 julia> Pkg.clone("https://github.com/pagnani/PlmDCA/")
 ```
