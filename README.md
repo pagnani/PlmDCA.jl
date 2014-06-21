@@ -72,18 +72,6 @@ The software provides two main functions `plmdca(filename::String,
 symmetric coupling version of the algorithm). Empirically it turns out
 that the asymmetric version is faster and more accurate. This function
 take as input the name of a (possibly zipped) multiple sequence
-alignment in FASTA format, and returns two matrices:
-
-* A `21 x 21 x N(N-1)/2` matrix containing the couplings that maximize
-  the Pseudolikelihood function `J(ai, aj, pairij)` where `ai, aj` are
-  the amino acid types (integers in the interval 1:21) of residue pair
-  `i,j`, and `pairij` is an integer in the interval `1:N(N-1)/2`,
-  where `N` is the number of residues in the multiple sequence
-  alignment.
-
-* A symmetric `N x N matrix` (N being the number of residues in the
-  multiple-sequence alignment) with the scores. The higher the score
-  the higher is the probability that residues are in contact.
 
 There are a number of possible algorithmic strategies for the
 optimization problem. As long as local gradient-based optimization is
@@ -101,9 +89,10 @@ There are a lot of optional arguments that can be set. To be documented
 
 Output
 ======
-The functions output a `type` (say `X`) with tree fields:
+The functions output a `type` (say `X`) with 3 fields:
 
-*  `X.Jtensor`: the coupling matrix
+
+*  `X.Jtensor`: the coupling matrix J[ri,rj,i,j] (not symmetric) 
 *  `X.pslike`: the pseudolikelihood
 *  `X.score`: a `(Int, Int, Float64)` vector of Tuples containing the
    candidate contact descending order (residue1, residue2 , score12).
