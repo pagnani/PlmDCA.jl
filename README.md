@@ -92,7 +92,11 @@ Output
 The functions output a `type` (say `X`) with 3 fields:
 
 
-*  `X.Jtensor`: the coupling matrix J[ri,rj,i,j] (not symmetric) 
+*  `X.Jtensor`: the coupling matrix `J[ri,rj,i,j]` a not symmetric
+`q x q x N x N` array, where `N` is the number of residues in the
+multiple sequence alignment, and `q` is the alphabet "size" (typically
+21 for proteins).
+    
 *  `X.pslike`: the pseudolikelihood
 *  `X.score`: a `(Int, Int, Float64)` vector of Tuples containing the
    candidate contact descending order (residue1, residue2 , score12).
