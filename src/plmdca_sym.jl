@@ -17,7 +17,7 @@ function plmdcasym(filename::String;
 
     W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta, remove_dups)
 
-    plmalg = PlmAlg(method,verbose, epsconv ,maxit)
+    plmalg = PlmAlg(method,verbose, epsconv ,maxit, nothing)
     plmvar = PlmVar(N,M,q,q*q,gaugecol,lambdaJ,lambdaH,Z,W)
 
     if decimation == false
