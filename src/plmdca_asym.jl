@@ -33,7 +33,7 @@ function plmdca(filename::String;
 
 
     score, FNAPC, Jtensor = ComputeScore(Jmat, plmvar)
-    return output = PlmOut{Float64,4}(pslike, Jtensor, score)
+    return output = PlmOut{4}(pslike, Jtensor, score)
 end
     
 

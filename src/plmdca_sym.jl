@@ -28,7 +28,7 @@ function plmdcasym(filename::String;
     end
 
     score, Jtens = ComputeScoreSym(Jmat, plmvar)
-    return output = PlmOut{Float64,3}(pseudolike, Jtens, score)    
+    return output = PlmOut{3}(pseudolike, Jtens, score)    
 end
     
 function MinimizePLSym(alg::PlmAlg, var::PlmVar)

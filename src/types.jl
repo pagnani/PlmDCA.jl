@@ -15,9 +15,9 @@ immutable PlmAlg
     end
 end
 
-immutable PlmOut{T,N}
+immutable PlmOut{N}
     pslike::Float64
-    Jtensor::Array{T,N}
+    Jtensor::Array{Float64,N}
     score::Array{(Int, Int, Float64),1}  
 end
 
