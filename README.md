@@ -43,7 +43,7 @@ julia> Pkg.clone("https://github.com/carlobaldassi/GaussDCA.jl")
 ```
 * [PlmDCA] The PlmDCA module itself can be added with
 ```
-julia> Pkg.clone("https://github.com/pagnani/PlmDCA/")
+julia> Pkg.clone("https://github.com/pagnani/PlmDCA")
 ```
    
    
