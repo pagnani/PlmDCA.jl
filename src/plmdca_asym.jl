@@ -33,7 +33,7 @@ function plmdca(filename::String;
 
 
     score, FNAPC, Jtensor = ComputeScore(Jmat, plmvar)
-    return output = PlmOut{4}(pslike, Jtensor, score)
+    return output = PlmOut{4}(sdata(pslike), Jtensor, score)
 end
     
 
@@ -62,7 +62,7 @@ function MinimizePLAsym(alg::PlmAlg, var::PlmVar)
         vecps[site] = minf
         minx
     end 
-    return Jmat, sum(vecps)
+    return Jmat, vecps
 end
 
 function ComputeUL(alg::PlmAlg, var::PlmVar, site::Int, LL::Int)

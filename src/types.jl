@@ -16,10 +16,13 @@ immutable PlmAlg
 end
 
 immutable PlmOut{N}
-    pslike::Float64
+    pslike::Union(Vector{Float64},Float64)
     Jtensor::Array{Float64,N}
     score::Array{(Int, Int, Float64),1}  
 end
+
+
+
 
 immutable PlmVar
     N::Int

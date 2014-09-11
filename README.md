@@ -67,8 +67,8 @@ optimization problem. As long as local gradient-based optimization is
 concernedl, this is a list of `:symbols` (associated to the different
 methods): 
 ```
-:NLOPT_LD_MMA, :LD_SLSQP, :LD_LBFGS, :LD_TNEWTON_PRECOND
-:LD_TNEWTON_PRECOND_RESTART, :LD_TNEWTON, :LD_VAR2, :NLOPT_LD_VAR1
+:LD_MMA, :LD_SLSQP, :LD_LBFGS, :LD_TNEWTON_PRECOND
+:LD_TNEWTON_PRECOND_RESTART, :LD_TNEWTON, :LD_VAR2, :LD_VAR1
 ```
 
 After some test we found that the best compromise betwee accuracy and
