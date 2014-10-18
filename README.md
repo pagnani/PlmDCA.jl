@@ -11,11 +11,12 @@ http://plmdca.csc.kth.se/. If you use this algorithm you should cite:
 
 2. M. Ekeberg, T. Hartonen, E. Aurell, Fast pseudolikelihood
    maximization for direct-coupling analysis of protein structure from
-   many homologous amino-acid sequences, arXiv:1401.4832 (supplementary
+   many homologous amino-acid sequences,
+   [arXiv:1401.4832](http://arxiv.org/abs/1401.4832) (supplementary
    material)
 
 The present software is a Julia implementation of above mentioned
-pepers, with no reference to the original MATLAB
+papers, with no reference to the original MATLAB
 [software](http://plmdca.csc.kth.se) implementation.
 
 Overview
@@ -24,9 +25,10 @@ Overview
 The code uses [NLopt](https://github.com/JuliaOpt/NLopt.jl) which
 provides a Julia interfaces to the free/open-source [NLopt
 library](http://ab-initio.mit.edu/wiki/index.php/NLopt). The program
-can be run on multiple cores previus ``addprocs(nprocs)`` where
-``nprocs`` should be some integer number `np` lower or equal to your
-(physical) number of cores.
+(only in its asymmetric version so far, see below) can be run on
+multiple cores previous ``addprocs(nprocs)`` where ``nprocs`` should
+be some integer number `np` lower or equal to your (physical) number
+of cores.
 
 Install
 -------
@@ -64,14 +66,14 @@ take as input the name of a (possibly zipped) multiple sequence
 
 There are a number of possible algorithmic strategies for the
 optimization problem. As long as local gradient-based optimization is
-concernedl, this is a list of `:symbols` (associated to the different
+concerned, this is a list of `:symbols` (associated to the different
 methods): 
 ```
 :LD_MMA, :LD_SLSQP, :LD_LBFGS, :LD_TNEWTON_PRECOND
 :LD_TNEWTON_PRECOND_RESTART, :LD_TNEWTON, :LD_VAR2, :LD_VAR1
 ```
 
-After some test we found that the best compromise betwee accuracy and
+After some test we found that the best compromise between accuracy and
 speed is achieved by the Low Storage BFGS method `:LD_LBFGS`, which is
 the default method in the code. The other methods can be set changing
 the default optional argument (e.g. `method=:LD_SLSQP`).
