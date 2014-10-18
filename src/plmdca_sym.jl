@@ -57,7 +57,8 @@ function MinimizePLSym(alg::PlmAlg, var::PlmVar)
     maxeval!(opt, alg.maxit)
     min_objective!(opt, f)
     elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
-    @printf("pl = %.4f\t time = %.4f\n", minf, elapstime)
+    @printf("pl = %.4f\t time = %.4f\t exit status = ", minf, elapstime)
+    println(ret)
     
     return minx, minf
 end
@@ -72,6 +73,7 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar)
 
     Jtens=reshape(Jvec[1:LL-N*q],q,q,Nc2)
     J = zeros(q,q,Nc2)
+
     for l=1:Nc2
         J[:,:,l] = Jtens[:,:,l] - repmat(mean(Jtens[:,:,l],1),q,1)-repmat(mean(Jtens[:,:,l],2),1,q) .+ mean(Jtens[:,:,l])
     end
@@ -118,7 +120,7 @@ function PLsiteAndGradSym!(vecJ::Array{Float64,1}, grad::Array{Float64,1}, plmva
 end
 
 function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::Array{Float64,1}, Z::Array{Int,1}, Wa::Float64, N::Int, q::Int, q2::Int)
-
+    
     vecene = zeros(Float64,q)
     expvecenesunorm = zeros(Float64,q)
     pseudolike = 0
@@ -128,11 +130,17 @@ function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::Array{Float64,1}, Z:
         norm = sumexp(vecene)
         expvecenesunorm = exp(vecene .- log(norm))
         pseudolike -= Wa * ( vecene[Z[site]] - log(norm) )
+	for i = 1:(site-1)
+            for s = 1:q
+                grad[ mygetindex(i, site, Z[i], s, N, q, q2) ] += 0.5 * Wa * expvecenesunorm[s]
+            end
+            grad[ mygetindex(i, site , Z[i], Z[site],  N,q,q2)] -= 0.5 * Wa
+        end
 	for i = (site+1):N 
             for s = 1:q
-                grad[ mygetindex(site, i , s,  Z[i], N,q,q2) ] += Wa * expvecenesunorm[s]
+                grad[ mygetindex(site, i , s,  Z[i], N,q,q2) ] += 0.5 * Wa * expvecenesunorm[s]
             end
-            grad[ mygetindex(site, i , Z[site], Z[i], N,q,q2)] -= Wa
+            grad[ mygetindex(site, i , Z[site], Z[i], N,q,q2)] -= 0.5* Wa
         end
         @simd for s = 1:q 
             grad[ offset + s ] += Wa *  expvecenesunorm[s] 
@@ -152,11 +160,14 @@ function fillvecenesym!(vecene::Array{Float64,1}, vecJ::Array{Float64,1}, Z::Arr
         for l = 1:q
             offset::Int = 0
             scra::Float64 = 0.0
+
+            for i=1:1:site-1
+                scra += vecJ[ mygetindex(i, site, Z[i], l,  N, q, q2)]
+            end
     	    for i = site+1:N
                 scra += vecJ[ mygetindex(site, i, l, Z[i], N, q, q2)]
-#                scra += vecJ[offset + l + q * (Z[i,a]-1)] 
-
             end # End sum_i \neq site J
+            scra *= 0.5 
             offset = mygetindex(N-1, N, q, q, N, q, q2)  + ( site - 1) * q  # last J element + (site-1)*q
 #            println(length(vecJ), " offset ", offset) 
             scra += vecJ[offset + l] # sum H 

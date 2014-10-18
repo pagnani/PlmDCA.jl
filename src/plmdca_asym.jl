@@ -58,7 +58,8 @@ function MinimizePLAsym(alg::PlmAlg, var::PlmVar)
         end
         min_objective!(opt, f)
         elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
-        alg.verbose && @printf("site = %d\t pl = %.4f\t time = %.4f\n", site, minf, elapstime)
+        alg.verbose && @printf("site = %d\t pl = %.4f\t time = %.4f\t", site, minf, elapstime)
+        alg.verbose && println("exit status = $ret")
         vecps[site] = minf
         minx
     end 
