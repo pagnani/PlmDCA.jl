@@ -71,7 +71,7 @@ function ReadFasta(filename::String,max_gap_fraction::Real, theta::Any, remove_d
     q = int(maximum(Z))
     
     q > 32 && error("parameter q=$q is too big (max 31 is allowed)")
-    _, _, Meff, W = GaussDCA.compute_new_frequencies(Z, theta)
+    _, _, Meff, W = GaussDCA.compute_new_frequencies(Z, q , theta)
     W  ./= Meff  
     Zint = int( Z )
     return W, Zint,N,M,q
