@@ -90,15 +90,17 @@ The functions output a `type PlmOut` (say `X`) with 3 fields:
 multiple sequence alignment, and `q` is the alphabet "size" (typically
 21 for proteins).
 *  `X.pslike`: the pseudolikelihood
-*  `X.score`: a `(Int, Int, Float64)` (in 0.3) or a
-`Tuple(Int,Int,Float64)` in (in 0.4) vector of Tuples containing the  
+*  `X.score`: a `(Int, Int, Float64)` (in julia version 0.3) or a
+`Tuple{Int,Int,Float64}` in (in julia version 0.4) vector of Tuples containing the  
    candidate contact descending order (residue1, residue2 , score12).
 
 
 Requirements
 ---
 
-The minimal julia version for using this code is 0.3
+The minimal julia version for using this code is 0.3. It requires the
+package [Compat](https://github.com/JuliaLang/Compat.jl) to guarantee
+compatibility between different julia versions.
 
 
 Todos 
