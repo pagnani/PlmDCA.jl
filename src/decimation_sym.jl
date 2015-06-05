@@ -29,8 +29,8 @@ function SetAllCouplingToZero!(vecJ::Array{Float64,1}, var::PlmVar, dec::DecVar{
     @assert LL == (binomial(N,2)*q2 + N*q)
     println("LL = $LL dmask = ", length(dec.dmask))
    
-    vecval = (Int,Float64)[]
-    sizehint(vecval,LL)
+@compat    vecval = Tuple{Int,Float64}[]
+@compat    sizehint!(vecval,LL)
     for i=1:LL-N*q
         dec.dmask[i] && push!(vecval,(i, vecJ[i]*vecJ[i]))
     end
@@ -39,7 +39,7 @@ function SetAllCouplingToZero!(vecJ::Array{Float64,1}, var::PlmVar, dec::DecVar{
     lvec = length(vecval)
     idxperm = sortperm(Float64[ vecval[i][2] for i=1:lvec]) 
     
-    ndec = int(dec.fracdec * (LL-N*q))
+@compat    ndec = round(Int, dec.fracdec * (LL-N*q))
     for i=1:ndec
         site = vecval[idxperm[i]][1]
         dec.dmask[site] = false
@@ -58,7 +58,7 @@ function SetCouplingToZero!(FN::Array{Float64,2},var::PlmVar, dec::DecVar{1})
     q2 = var.q2
 
    
-    vecval = (Int,Float64)[]
+@compat    vecval = Tuple{Int,Float64}[]
     counter = 0
     for i=1:(N-1), j=(i+1):N
         counter += 1
@@ -69,7 +69,7 @@ function SetCouplingToZero!(FN::Array{Float64,2},var::PlmVar, dec::DecVar{1})
     lvec = length(vecval)
     idxperm = sortperm(Float64[ vecval[i][2] for i=1:lvec]) 
     
-    ndec = int(dec.fracdec * counter)
+@compat    ndec = round(Int,dec.fracdec * counter)
     for i=1:ndec
         site = vecval[idxperm[i]][1]
         dec.dmask[site] = false

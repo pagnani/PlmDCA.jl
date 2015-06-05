@@ -24,15 +24,17 @@ function SetCouplingToZeroAsym!(vecJ::Array{Float64,2}, var::PlmVar, dec::DecVar
     q  = var.q
     q2 = var.q2
    
-    vecval = (Int,Int,Float64)[]
-    sizehint(vecval, N*LL)
+@compat    vecval = Tuple{Int,Int,Float64}[]
+@compat    sizehint!(vecval, N*LL)
     for j=1:N,i=1:LL
         dec.dmask[i,j] && push!(vecval,(i,j,vecJ[i,j]*vecJ[i,j])) # sorting absval
     end
     
     lvec = length(vecval)
     idxperm = sortperm(Float64[ vecval[i][3] for i=1:lvec]) 
-    ndec = int(dec.fracdec * N*(N-1)*q2 )
+    println("ndec = ", dec.fracdec * N*(N-1)*q2 );
+
+@compat    ndec = round(Int,dec.fracdec * N*(N-1)*q2 )
 
     for i=1:ndec
         sitei = vecval[idxperm[i]][1]
@@ -66,7 +68,7 @@ function MinimizePLAsym(alg::PlmAlg, var::PlmVar, dec::DecVar{2}, Jmat::Array{Fl
         alg.verbose && @printf("site = %d\t pl = %.4f\t time = %.4f\n", site, minf, elapstime)
         minx
     end 
-    return Jmatnew, sum(psvec)
+    return Jmatnew, psvec
 end 
 
 function ComputeConstraintsAsym!(decvar::DecVar{2}, site::Int, q::Int, N::Int, x0::Array{Float64,1} )

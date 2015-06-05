@@ -15,10 +15,10 @@ immutable PlmAlg
     end
 end
 
-immutable PlmOut{N}
+@compat immutable PlmOut{N}
     pslike::Union(Vector{Float64},Float64)
     Jtensor::Array{Float64,N}
-    score::Array{(Int, Int, Float64),1}  
+    score::Array{Tuple{Int, Int, Float64},1}  
 end
 
 
