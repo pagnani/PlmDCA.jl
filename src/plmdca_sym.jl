@@ -1,4 +1,4 @@
-function plmdcasym(filename::String;
+function plmdcasym(filename::AbstractString;
                 decimation::Bool=false,
                 fracmax::Float64 = 0.3,
                 fracdec::Float64 = 0.1,

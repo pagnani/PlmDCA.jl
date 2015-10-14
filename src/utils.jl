@@ -59,7 +59,7 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar)
 end
 
 
-function ReadFasta(filename::String,max_gap_fraction::Real, theta::Any, remove_dups::Bool)
+function ReadFasta(filename::AbstractString,max_gap_fraction::Real, theta::Any, remove_dups::Bool)
 
     Z = GaussDCA.read_fasta_alignment(filename, max_gap_fraction)
     if remove_dups
