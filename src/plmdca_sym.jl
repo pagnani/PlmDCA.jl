@@ -3,6 +3,7 @@ function plmdcasym(filename::AbstractString;
                 fracmax::Float64 = 0.3,
                 fracdec::Float64 = 0.1,
                 remove_dups::Bool = true,
+                min_separation::Int = 1,
                 max_gap_fraction::Real = 0.9, 
                 theta = :auto, 
                 lambdaJ::Real=0.01, 
@@ -27,7 +28,7 @@ function plmdcasym(filename::AbstractString;
         Jmat, pseudolike = DecimateSym!(plmvar, plmalg, decvar)
     end
 
-    score, Jtens = ComputeScoreSym(Jmat, plmvar)
+    score, Jtens = ComputeScoreSym(Jmat, plmvar, min_separation)
     return output = PlmOut{3}(pseudolike, Jtens, score)    
 end
     
@@ -63,7 +64,7 @@ function MinimizePLSym(alg::PlmAlg, var::PlmVar)
     return minx, minf
 end
 
-function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar)
+function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::Int)
 
 
     LL = length(Jvec)
@@ -88,7 +89,7 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar)
         end
     end
     FN = GaussDCA.correct_APC(FN)  
-    score = GaussDCA.compute_ranking(FN)
+    score = GaussDCA.compute_ranking(FN,min_separation)
     return score, Jtens
 end
 

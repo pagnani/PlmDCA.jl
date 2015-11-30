@@ -4,6 +4,7 @@
                 fracmax::Float64 = 0.3,
                 fracdec::Float64 = 0.1,
                 remove_dups::Bool = true,
+                min_separation::Int = 1,
                 max_gap_fraction::Real = 0.9, 
                 theta = :auto, 
                 lambdaJ::Real=0.005, 
@@ -32,7 +33,7 @@
     end
 
 
-    score, FNAPC, Jtensor = ComputeScore(Jmat, plmvar)
+    score, FNAPC, Jtensor = ComputeScore(Jmat, plmvar, min_separation)
     return output = PlmOut{4}(sdata(pslike), Jtensor, score)
 end
     

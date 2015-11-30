@@ -1,4 +1,4 @@
-function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar)
+function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
 
     q = var.q
     N = var.N
@@ -54,7 +54,7 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar)
         end
     end
     FN=GaussDCA.correct_APC(FN)
-    score = GaussDCA.compute_ranking(FN)
+    score = GaussDCA.compute_ranking(FN,min_separation)
     return score, FN, Jtensor
 end
 
