@@ -99,7 +99,7 @@ Requirements
 
 The minimal julia version for using this code is 0.3. It requires the
 package [Compat](https://github.com/JuliaLang/Compat.jl) to guarantee
-compatibility between different julia versions.
+compatibility between different Julia versions.
 
 
 Todos 
