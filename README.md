@@ -62,7 +62,10 @@ The software provides two main functions `plmdca(filename::String,
 ...)` and `plmdcasym(filename::String,...)` (resp. the asymmetric and
 symmetric coupling version of the algorithm). Empirically it turns out
 that the asymmetric version is faster and more accurate. This function
-take as input the name of a (possibly zipped) multiple sequence
+take as input the name of a (possibly zipped) multiple sequence.
+
+We also provide another function `mutualinfo(filename::String,...)` to
+compute the mutual information score. 
 
 There are a number of possible algorithmic strategies for the
 optimization problem. As long as local gradient-based optimization is
@@ -92,6 +95,9 @@ multiple sequence alignment, and `q` is the alphabet "size" (typically
 *  `X.pslike`: the pseudolikelihood
 *  `X.score`: a `(Int, Int, Float64)` (in julia version 0.3) or a
 `Tuple{Int,Int,Float64}` in (in julia version 0.4) vector of Tuples containing the candidate contact descending order (residue1, residue2 , score12).
+
+
+
 
 
 Requirements
