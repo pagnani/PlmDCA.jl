@@ -71,8 +71,8 @@ function ReadFasta(filename::AbstractString,max_gap_fraction::Real, theta::Any, 
 @compat    q = round(Int,maximum(Z))
     
     q > 32 && error("parameter q=$q is too big (max 31 is allowed)")
-    _, _, Meff, W = GaussDCA.compute_new_frequencies(Z, q , theta)
-    W  ./= Meff  
+    W , Meff = GaussDCA.compute_weights(Z,q,theta)
+    scale!(W, 1.0/Meff)
 @compat    Zint=round(Int,Z)
     return W, Zint,N,M,q
 end
