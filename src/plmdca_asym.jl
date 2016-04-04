@@ -1,19 +1,19 @@
 @compat function plmdca(filename::AbstractString;
-                decimation::Bool=false,
-                boolmask::Union{Array{Bool,2},Void}=nothing,
-                fracmax::Float64 = 0.3,
-                fracdec::Float64 = 0.1,
-                remove_dups::Bool = true,
-                min_separation::Int = 1,
-                max_gap_fraction::Real = 0.9, 
-                theta = :auto, 
-                lambdaJ::Real=0.005, 
-                lambdaH::Real=0.01,
-                gaugecol::Int=-1,
-                epsconv::Real=1.0e-5,
-                maxit::Int=1000,
-                verbose::Bool=true,
-                method::Symbol=:LD_LBFGS)
+                        decimation::Bool=false,
+                        boolmask::Union{Array{Bool,2},Void}=nothing,
+                        fracmax::Float64 = 0.3,
+                        fracdec::Float64 = 0.1,
+                        remove_dups::Bool = true,
+                        min_separation::Int = 1,
+                        max_gap_fraction::Real = 0.9,
+                        theta = :auto,
+                        lambdaJ::Real=0.005,
+                        lambdaH::Real=0.01,
+                        gaugecol::Int=-1,
+                        epsconv::Real=1.0e-5,
+                        maxit::Int=1000,
+                        verbose::Bool=true,
+                        method::Symbol=:LD_LBFGS)
 
     W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta, remove_dups)
 
