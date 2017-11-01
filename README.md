@@ -19,6 +19,8 @@ The present software is a Julia implementation of above mentioned
 papers, with no reference to the original MATLAB
 [software](http://plmdca.csc.kth.se) implementation.
 
+The code now requires at least Julia version 0.6 or later.
+
 Overview
 --------
 
