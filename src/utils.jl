@@ -4,8 +4,8 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
     N = var.N
 
     JJ=reshape(Jmat[1:end-q,:], q,q,N-1,N)
-@compat    Jtemp1=zeros( q,q,Int(N*(N-1)/2))
-@compat    Jtemp2=zeros( q,q,Int(N*(N-1)/2))
+    Jtemp1=zeros( q,q,Int(N*(N-1)/2))
+    Jtemp2=zeros( q,q,Int(N*(N-1)/2))
     l = 1
 
     for i=1:(N-1)
@@ -31,10 +31,10 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
         i!=j && (ASFN[i,j] =sum(Jtensor[:,:,i,j].^2)) 
     end
 
-@compat    J1=zeros(q,q,Int(N*(N-1)/2))
-@compat    J2=zeros(q,q,Int(N*(N-1)/2))
+    J1=zeros(q,q,Int(N*(N-1)/2))
+    J2=zeros(q,q,Int(N*(N-1)/2))
 
-@compat    for l=1:Int(N*(N-1)/2)
+    for l=1:Int(N*(N-1)/2)
         J1[:,:,l] = Jtemp1[:,:,l]-repmat(mean(Jtemp1[:,:,l],1),q,1)-repmat(mean(Jtemp1[:,:,l],2),1,q) .+ mean(Jtemp1[:,:,l])
         J2[:,:,l] = Jtemp2[:,:,l]-repmat(mean(Jtemp2[:,:,l],1),q,1)-repmat(mean(Jtemp2[:,:,l],2),1,q) .+ mean(Jtemp2[:,:,l])
     end
@@ -68,12 +68,12 @@ function ReadFasta(filename::AbstractString,max_gap_fraction::Real, theta::Any, 
 
 
     N, M = size(Z)
-@compat    q = round(Int,maximum(Z))
+    q = round(Int,maximum(Z))
     
     q > 32 && error("parameter q=$q is too big (max 31 is allowed)")
     W , Meff = GaussDCA.compute_weights(Z,q,theta)
     scale!(W, 1.0/Meff)
-@compat    Zint=round(Int,Z)
+    Zint=round.(Int,Z)
     return W, Zint,N,M,q
 end
 

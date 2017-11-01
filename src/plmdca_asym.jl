@@ -1,4 +1,4 @@
-@compat function plmdca(filename::AbstractString;
+function plmdca(filename::AbstractString;
                         decimation::Bool=false,
                         boolmask::Union{Array{Bool,2},Void}=nothing,
                         fracmax::Float64 = 0.3,
@@ -17,8 +17,7 @@
 
     W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta, remove_dups)
 
-    boolmask != nothing && size(boolmask) != (N,N) && error("size boolmask different from ( $N, $N )")      
-
+    boolmask != nothing && size(boolmask) != (N,N) && error("size boolmask different from ( $N, $N )")
 
     plmalg = PlmAlg(method,verbose, epsconv ,maxit, boolmask)
     plmvar = PlmVar(N,M,q,q*q,gaugecol,lambdaJ,lambdaH,Z,W)
@@ -36,18 +35,20 @@
     score, FNAPC, Jtensor = ComputeScore(Jmat, plmvar, min_separation)
     return output = PlmOut{4}(sdata(pslike), Jtensor, score)
 end
-    
+
+function optimfunwrapper(x::Vector, g::Vector, site, var)
+    g === nothing && (g = zeros(Float64, length(x)))
+    return PLsiteAndGrad!(x, g, site,  var)            
+end
+
+
 
 function MinimizePLAsym(alg::PlmAlg, var::PlmVar)
 
     LL = (var.N - 1) * var.q2 + var.q
     x0 = zeros(Float64, LL)
-    vecps = SharedArray(Float64,var.N)
+    vecps = SharedArray{Float64}(var.N)
     Jmat = @parallel hcat for site=1:var.N #1:12
-        function f(x::Vector, g::Vector)
-            g === nothing && (g = zeros(Float64, length(x)))
-            return PLsiteAndGrad!(x, g, site,  var)            
-        end
         
         opt = Opt(alg.method, length(x0))
         ftol_abs!(opt, alg.epsconv)
@@ -57,7 +58,7 @@ function MinimizePLAsym(alg::PlmAlg, var::PlmVar)
             lower_bounds!(opt, lb)
             upper_bounds!(opt, ub)
         end
-        min_objective!(opt, f)
+        min_objective!(opt, (x,g)->optimfunwrapper(x,g,site,var))
         elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
         alg.verbose && @printf("site = %d\t pl = %.4f\t time = %.4f\t", site, minf, elapstime)
         alg.verbose && println("exit status = $ret")
@@ -124,9 +125,9 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1},  grad::Array{Float64,1}, site::I
     @inbounds begin 
         for a = 1:M       
             fillvecene!(vecene, vecJ,site,a, q, Z,N)        
-            norm = sumexp(vecene)
-            expvecenesunorm = exp(vecene .- log(norm))
-            pseudolike -= W[a] * ( vecene[Z[site,a]] - log(norm) )
+            lnorm = log(sumexp(vecene))
+            expvecenesunorm .= exp.(vecene .- lnorm)
+            pseudolike -= W[a] * (vecene[Z[site,a]] - lnorm)
             offset = 0         
             for i = 1:site-1 
                 @simd for s = 1:q
