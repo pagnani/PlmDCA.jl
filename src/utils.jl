@@ -1,3 +1,14 @@
+function optimfunwrapper(x::Vector, g::Vector, site, var)
+    g === nothing && (g = zeros(Float64, length(x)))
+    return PLsiteAndGrad!(x, g, site,  var)            
+end
+
+function optimfunwrapper(x::Vector, g::Vector, var)
+    g === nothing && (g = zeros(Float64, length(x)))
+    return PLsiteAndGradSym!(x, g, var)            
+end
+
+
 function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
 
     q = var.q

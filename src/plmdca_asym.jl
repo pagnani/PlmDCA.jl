@@ -36,12 +36,6 @@ function plmdca(filename::String;
     return output = PlmOut{4}(sdata(pslike), Jtensor, score)
 end
 
-function optimfunwrapper(x::Vector, g::Vector, site, var)
-    g === nothing && (g = zeros(Float64, length(x)))
-    return PLsiteAndGrad!(x, g, site,  var)            
-end
-
-
 
 function MinimizePLAsym(alg::PlmAlg, var::PlmVar)
 

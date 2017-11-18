@@ -43,20 +43,20 @@ function MinimizePLSym(alg::PlmAlg, var::PlmVar)
 
     x0 = zeros(Float64, LL)
     
-    function f(x::Vector, g::Vector)
-        eltime = @elapsed begin
-            g === nothing && (g = zeros(Float64, length(x)))
-            pl = PLsiteAndGradSym!(x, g, var)
-        end
-        alg.verbose && println("time spent in iteration = $eltime . PL = $pl")
-        return pl
-    end
+    # function f(x::Vector, g::Vector)
+    #     eltime = @elapsed begin
+    #         g === nothing && (g = zeros(Float64, length(x)))
+    #         pl = PLsiteAndGradSym!(x, g, var)
+    #     end
+    #     alg.verbose && println("time spent in iteration = $eltime . PL = $pl")
+    #     return pl
+    # end
 
     opt = Opt(alg.method, length(x0))
     
     ftol_abs!(opt, alg.epsconv)
     maxeval!(opt, alg.maxit)
-    min_objective!(opt, f)
+    min_objective!(opt, (x,g)->optimfunwrapper(x,g,var))
     elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
     @printf("pl = %.4f\t time = %.4f\t exit status = ", minf, elapstime)
     println(ret)
@@ -129,7 +129,7 @@ function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::Array{Float64,1}, Z:
     @inbounds for site=1:N    # site < i 
         fillvecenesym!(vecene, vecJ, Z, site, q,N)        
         norm = sumexp(vecene)
-        expvecenesunorm = exp(vecene .- log(norm))
+        expvecenesunorm = exp.(vecene .- log(norm))
         pseudolike -= Wa * ( vecene[Z[site]] - log(norm) )
 	for i = 1:(site-1)
             for s = 1:q
