@@ -15,6 +15,9 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
     N = var.N
 
     JJ=reshape(Jmat[1:end-q,:], q,q,N-1,N)
+
+
+
     Jtemp1=zeros( q,q,Int(N*(N-1)/2))
     Jtemp2=zeros( q,q,Int(N*(N-1)/2))
     l = 1
@@ -26,6 +29,7 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
             l=l+1;
         end
     end
+
     
     Jtensor = zeros(q,q,N,N)
     l = 1
@@ -36,6 +40,8 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
             l += 1
         end
     end
+
+
 
     ASFN = zeros(N,N)
     for i=1:N,j=1:N 
@@ -51,8 +57,11 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
     end
     J = 0.5 * ( J1 + J2 )
 
-
-
+    htensor = fill(0.0, q,N)
+    for i in 1:N
+        htensor[:,i] = Jmat[end-q+1:end,i]
+    end
+    
     FN = zeros(Float64, N,N)
     l = 1
 
@@ -66,7 +75,7 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
     end
     FN=GaussDCA.correct_APC(FN)
     score = GaussDCA.compute_ranking(FN,min_separation)
-    return score, FN, Jtensor
+    return score, FN, 0.5*(permutedims(Jtensor,[2,1,4,3])+Jtensor), htensor
 end
 
 

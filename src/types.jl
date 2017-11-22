@@ -18,6 +18,7 @@ end
 immutable PlmOut{N}
     pslike::Union{Vector{Float64},Float64}
     Jtensor::Array{Float64,N}
+    htensor::Array{Float64,2}
     score::Array{Tuple{Int, Int, Float64},1}  
 end
 
@@ -43,10 +44,11 @@ end
 immutable DecVar{N} 
     fracdec::Float64
     fracmax::Float64
+    blockdecimate::Bool
     dmask::SharedArray{Bool,N}
-    function DecVar{N}(fracdec, fracmax, dmask) where N
+    function DecVar{N}(fracdec, fracmax, blockdecimate, dmask) where N
         sdmask = SharedArray{Bool}(size(dmask))
         sdmask[:] = dmask 
-        new(fracdec, fracmax, sdmask)
+        new(fracdec, fracmax, blockdecimate, sdmask)
     end    
 end

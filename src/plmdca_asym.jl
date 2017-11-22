@@ -31,9 +31,8 @@ function plmdca(filename::String;
         Jmat, pslike = DecimateAsym!(plmvar, plmalg, decvar)        
     end
 
-
-    score, FNAPC, Jtensor = ComputeScore(Jmat, plmvar, min_separation)
-    return output = PlmOut{4}(sdata(pslike), Jtensor, score)
+    score, FNAPC, Jtensor, htensor = ComputeScore(Jmat, plmvar, min_separation)
+    return output = PlmOut{4}(sdata(pslike), Jtensor, htensor, score)
 end
 
 
