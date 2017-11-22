@@ -2,6 +2,7 @@ function plmdcasym(filename::AbstractString;
                 decimation::Bool=false,
                 fracmax::Float64 = 0.3,
                 fracdec::Float64 = 0.1,
+                blockdecimate::Bool=true, # decimate on a per-block base (all J[:,:,i,j] = 0)
                 remove_dups::Bool = true,
                 min_separation::Int = 1,
                 max_gap_fraction::Real = 0.9, 
@@ -24,12 +25,15 @@ function plmdcasym(filename::AbstractString;
     if decimation == false
         Jmat, pseudolike = MinimizePLSym(plmalg,plmvar) 
     else
-        decvar = DecVar{1}(fracdec, fracmax, ones(Bool, binomial(N,2)*q*q+N*q))        
+        if blockdecimate
+            decvar = DecVar{1}(fracdec, fracmax, blockdecimate, ones(Bool, binomial(N,2)))
+        else
+            decvar = DecVar{1}(fracdec, fracmax, blockdecimate, ones(Bool, binomial(N,2)*q*q+N*q))        
+        end
         Jmat, pseudolike = DecimateSym!(plmvar, plmalg, decvar)
     end
-
-    score, Jtens = ComputeScoreSym(Jmat, plmvar, min_separation)
-    return output = PlmOut{3}(pseudolike, Jtens, score)    
+    score, Jtens, htens = ComputeScoreSym(Jmat, plmvar, min_separation)
+    return output = PlmOut{3}(pseudolike, Jtens, htens, score)    
 end
     
 function MinimizePLSym(alg::PlmAlg, var::PlmVar)
@@ -43,15 +47,6 @@ function MinimizePLSym(alg::PlmAlg, var::PlmVar)
 
     x0 = zeros(Float64, LL)
     
-    # function f(x::Vector, g::Vector)
-    #     eltime = @elapsed begin
-    #         g === nothing && (g = zeros(Float64, length(x)))
-    #         pl = PLsiteAndGradSym!(x, g, var)
-    #     end
-    #     alg.verbose && println("time spent in iteration = $eltime . PL = $pl")
-    #     return pl
-    # end
-
     opt = Opt(alg.method, length(x0))
     
     ftol_abs!(opt, alg.epsconv)
@@ -73,12 +68,16 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
     Nc2 = binomial(N,2)
 
     Jtens=reshape(Jvec[1:LL-N*q],q,q,Nc2)
+    htens=fill(0.0,q,N)
     J = zeros(q,q,Nc2)
 
+    htens=reshape(Jvec[LL-N*q + 1:end],q,N)
+    
     for l=1:Nc2
         J[:,:,l] = Jtens[:,:,l] - repmat(mean(Jtens[:,:,l],1),q,1)-repmat(mean(Jtens[:,:,l],2),1,q) .+ mean(Jtens[:,:,l])
     end
-
+    
+    
     FN = zeros(Float64, N,N)
     l = 1
     for i=1:N-1
@@ -90,7 +89,7 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
     end
     FN = GaussDCA.correct_APC(FN)  
     score = GaussDCA.compute_ranking(FN,min_separation)
-    return score, Jtens
+    return score, Jtens,htens
 end
 
 function PLsiteAndGradSym!(vecJ::Array{Float64,1}, grad::Array{Float64,1}, plmvar::PlmVar)
