@@ -87,7 +87,7 @@ There are more optional arguments that can be set (to be documented...).
 
 Output
 ======
-The functions output a `type PlmOut` (say `X`) with 3 fields:
+The functions output a `type PlmOut` (say `X`) with 4 fields:
 
 
 *  `X.Jtensor`: the coupling matrix `J[ri,rj,i,j]` a symmetrized
