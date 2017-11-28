@@ -108,7 +108,7 @@ function PLsiteAndGradSym!(vecJ::Array{Float64,1}, grad::Array{Float64,1}, plmva
         grad[i] = 2.0 * vecJ[i] * lambdaJ
     end
     for i=(LL-N*q + 1):LL
-        grad[i] = 2.0 * vecJ[i] * lambdaH
+        grad[i] = 4.0 * vecJ[i] * lambdaH
     end
     pseudolike = 0
     for a = 1:M         
@@ -196,7 +196,7 @@ function L2norm_sym(vec::Array{Float64,1}, var::PlmVar)
     @inbounds @simd for i=(LL - N*q + 1):LL
         mysum2 += vec[i] * vec[i]
     end
-    mysum2 *= lambdaH
+    mysum2 *= 2lambdaH
     
     return mysum1+mysum2
 end

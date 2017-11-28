@@ -7,7 +7,7 @@ function plmdca(filename::String;
                         min_separation::Int = 1,
                         max_gap_fraction::Real = 0.9,
                         theta = :auto,
-                        lambdaJ::Real=0.005,
+                        lambdaJ::Real=0.01,
                         lambdaH::Real=0.01,
                         gaugecol::Int=-1,
                         epsconv::Real=1.0e-5,
@@ -108,7 +108,7 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1},  grad::Array{Float64,1}, site::I
         grad[i] = 2.0 * plmvar.lambdaJ * vecJ[i]
     end
     for i=(LL-q+1):LL
-       grad[i] = 2.0 * plmvar.lambdaH * vecJ[i]
+       grad[i] = 4.0 * plmvar.lambdaH * vecJ[i]
     end 
 
     vecene = zeros(Float64,q)
@@ -198,7 +198,7 @@ function L2norm_asym(vec::Array{Float64,1}, plmvar::PlmVar)
     @inbounds @simd for i=(LL-q+1):LL
         mysum2 += vec[i] * vec[i]
     end
-    mysum2 *= lambdaH
+    mysum2 *= 2lambdaH
 
     return mysum1+mysum2
 end
