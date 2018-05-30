@@ -1,6 +1,6 @@
 function plmdca(filename::String;
                         decimation::Bool=false,
-                        boolmask::Union{Array{Bool,2},Void}=nothing,
+                        boolmask::Union{Array{Bool,2},Nothing}=nothing,
                         fracmax::Real = 0.3,
                         fracdec::Real = 0.1,
                         remove_dups::Bool = true,

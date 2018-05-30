@@ -1,9 +1,9 @@
-immutable PlmAlg
+mutable struct PlmAlg
     method::Symbol
     verbose::Bool
     epsconv::Float64
     maxit::Int
-    boolmask::Union{SharedArray{Bool,2},Void}
+    boolmask::Union{SharedArray{Bool,2},Nothing}
     function PlmAlg(method,verbose, epsconv, maxit, boolmask)
         if boolmask != nothing 
             sboolmask = SharedArray{Bool}(size(boolmask))
@@ -15,14 +15,14 @@ immutable PlmAlg
     end
 end
 
-immutable PlmOut{N}
+struct PlmOut{N}
     pslike::Union{Vector{Float64},Float64}
     Jtensor::Array{Float64,N}
     htensor::Array{Float64,2}
     score::Array{Tuple{Int, Int, Float64},1}  
 end
 
-immutable PlmVar
+struct PlmVar
     N::Int
     M::Int
     q::Int    
@@ -41,7 +41,7 @@ immutable PlmVar
     end
 end
 
-immutable DecVar{N} 
+struct DecVar{N} 
     fracdec::Float64
     fracmax::Float64
     blockdecimate::Bool
