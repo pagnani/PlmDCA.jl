@@ -1,5 +1,5 @@
 module PlmDCA
-using GaussDCA
+using GaussDCA,SharedArrays,Distributed,Printf, LinearAlgebra
 
 using NLopt
 

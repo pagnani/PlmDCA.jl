@@ -23,7 +23,7 @@ function mutualinfo(filename::AbstractString;
         return mi
     elseif output == :score
         Neff = N - min_separation
-        score   = Vector{Tuple{Int,Int,Float64}}(Neff*(Neff+1)>>1)
+        score   = Vector{Tuple{Int,Int,Float64}}(undef, (Neff*(Neff+1))>>1)
 
         ctr = 0
         for i=1:N-min_separation, j=i+min_separation:N
