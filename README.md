@@ -49,7 +49,14 @@ julia> Pkg.clone("https://github.com/carlobaldassi/GaussDCA.jl")
 ```
 julia> Pkg.clone("https://github.com/pagnani/PlmDCA")
 ```
-   
+
+To install the package under version >= 0.7 please use the new package manager (it can be activated from the REPL using the key `]`)
+
+```
+(v0.7) pkg> add https://github.com/christophfeinauer/PdbTool.jl #v07
+```
+
+
    
 We have not tested yet the software on Windows.
 
