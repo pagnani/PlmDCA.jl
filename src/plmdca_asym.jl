@@ -41,7 +41,7 @@ function MinimizePLAsym(alg::PlmAlg, var::PlmVar)
     LL = (var.N - 1) * var.q2 + var.q
     x0 = zeros(Float64, LL)
     vecps = SharedArray{Float64}(var.N)
-    Jmat = @parallel hcat for site=1:var.N #1:12
+    Jmat = @distributed hcat for site=1:var.N #1:12
         
         opt = Opt(alg.method, length(x0))
         ftol_abs!(opt, alg.epsconv)
