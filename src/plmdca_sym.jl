@@ -74,7 +74,7 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
     htens=reshape(Jvec[LL-N*q + 1:end],q,N)
     
     for l=1:Nc2
-        J[:,:,l] = Jtens[:,:,l] - repmat(mean(Jtens[:,:,l],1),q,1)-repmat(mean(Jtens[:,:,l],2),1,q) .+ mean(Jtens[:,:,l])
+        J[:,:,l] = Jtens[:,:,l] - repeat(mean(Jtens[:,:,l],dims=1),q,1)-repeat(mean(Jtens[:,:,l],dims=2),1,q) .+ mean(Jtens[:,:,l])
     end
     
     
@@ -82,7 +82,7 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
     l = 1
     for i=1:N-1
         for j=i+1:N
-            FN[i,j] = vecnorm(J[:,:,l],2)
+            FN[i,j] = norm(J[:,:,l],2)
             FN[j,i] = FN[i,j]
             l+=1
         end
