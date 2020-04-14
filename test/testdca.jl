@@ -1,5 +1,5 @@
 module TestDCA
-using Test, PottsGauge
+using Test, PlmDCA, PottsGauge
 
 function energy(x,J,h)
     q,q,N,N = size(J)
@@ -10,7 +10,7 @@ function energy(x,J,h)
         end
     end
     eh = 0.0
-    @inbounds @simd for i in 1:N-1
+    @inbounds @simd for i in 1:N
         eh -= h[x[i],i]
     end
     return eJ + eh
@@ -19,7 +19,7 @@ end
 function complete_dataset(N,q)
     Z = zeros(Int,N,q^N)
     bounds = ntuple(x->q,N)
-    ctr =0;
+    ctr = 0
     @inbounds for i in CartesianIndices(bounds)
         ctr += 1
         for j in 1:N
@@ -30,8 +30,8 @@ function complete_dataset(N,q)
 end
 
 function generateWZJh(N,q)
-    Jasym = randn(q,q,N,N)
-    h = randn(q,N)
+    Jasym = rand(q,q,N,N)
+    h = rand(q,N)
     J = 0.5*(permutedims(Jasym,[2,1,4,3])+Jasym)
     for i in 1:N
         for a in 1:q
@@ -46,39 +46,31 @@ function generateWZJh(N,q)
     return W,Z,J,h
 end
 
-function myplmDCA(Z::Array{T,2}, W::Vector{S};
-    method::Symbol=:LD_LBFGS,
-    verbose::Bool = true,
-    min_separation::Integer=1,
-    epsconv::Real = 1e-5,
-    maxit::Integer = 1000,
-    boolmask = nothing,
-    gaugecol::Int = -1,
-    lambdaJ::Real = 0.01,
-    lambdaH::Real = 0.01) where T<:Integer where S<:AbstractFloat
-
-    N, M = size(Z)
-    q = Int(maximum(Z))
-    q > 32 && error("parameter q=$q is too big (max 32 is allowed)")
-    M == length(W) || throw(DimensionMismatch("incompatible length W"))
-    plmalg = PlmDCA.PlmAlg(method, verbose, epsconv , maxit, boolmask)
-    normedW = W./sum(W) # plmDCA expects normalized W !!!!
-    plmvar = PlmDCA.PlmVar(N,M,q,q*q,gaugecol,lambdaJ,lambdaH,round.(Int,Z),normedW)
-    Jmat, pslike = PlmDCA.MinimizePLAsym(plmalg,plmvar)
-    plmscore, FNAPC, Jtensor, htensor = PlmDCA.ComputeScore(Jmat, plmvar, min_separation)
-    return plmscore,Jtensor,htensor
-end
-
-function testDCA(N,q)
+function testDCA(N,q;
+                 verbose::Bool=false,
+                 epsconv::Real=1e20, gauge = ZeroSumGauge(),
+                 lambdaJ::Real = 0.0,
+                 lambdaH=0.0,
+                 asym::Bool=true,
+                 maxit::Integer=1000,
+                 method::Symbol=:LD_LBFGS)
+   
     W,Z,J,h = generateWZJh(N,q)
-    plmscore,Jplm,hplm = myplmDCA(Z,W,lambdaJ=0.0,lambdaH=0.0,epsconv=1e-20,verbose=false)
-    Jz,hz = PottsGauge.gauge(J,h,ZeroSumGauge())
-    Jplmz,hplmz = PottsGauge.gauge(Jplm,hplm,ZeroSumGauge())
+
+    func_dca = asym ? plmdca_asym : plmdca_sym
+    
+    resplm = func_dca(Z,W,lambdaJ=lambdaJ,lambdaH=lambdaH,epsconv=epsconv,verbose=verbose,maxit=maxit,method=method)
+   
+    Jplm,hplm = resplm.Jtensor,resplm.htensor
+    Jz,hz = PottsGauge.gauge(J,h,gauge)
+    Jplmz,hplmz = PottsGauge.gauge(Jplm,hplm,gauge)
+#    return Jplmz,hplmz,Jz,hz,Jplm,hplm,J,h
     return sum(abs2,Jz-Jplmz)<1e-6
 end
-
-@test testDCA(4,2)
-@test testDCA(6,2)
-@test testDCA(4,3)
-printstyled("All TestDCA passed!\n",color=:green,bold=true)
+for tf in (true, false) # asymmetric (true) and symmetric (false
+    @test testDCA(4,2,lambdaJ=1e-7,epsconv=1e-20,asym=tf,verbose=true)
+    @test testDCA(6,2,lambdaJ=1e-7,epsconv=1e-20,asym=tf,verbose=true)
+    @test testDCA(4,3,lambdaJ=1e-7,epsconv=1e-20,asym=tf,verbose=true)
+end
+printstyled("All TestDCA passed!\n",color=:light_green,bold=true)
 end

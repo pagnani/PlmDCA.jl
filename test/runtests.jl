@@ -1,8 +1,8 @@
 using PlmDCA,Test
 
-tests = ["testdca"]
+tests = ["testdca","testcorr"]
 
-printstyled("Running tests:\n", color=:blue)
+printstyled("Running tests:\n", bold=true, color=:light_blue)
 
 using Random
 Random.seed!(345679)
@@ -16,7 +16,9 @@ res = map(tests) do t
     return
 end
 # print method ambiguities
-println("Potentially stale exports: ")
+
 ambiguities=Test.detect_ambiguities(PlmDCA)
-isempty(ambiguities) || display(ambiguities)
-println()
+printstyled("Potentially stale exports: ",bold=true, color=:light_blue)
+isempty(ambiguities) ? (printstyled("\t none\n",bold=true, color=:light_green)) : (display(ambiguities)) 
+
+
