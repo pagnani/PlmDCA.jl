@@ -1,5 +1,9 @@
 PlmDCA
 ======
+[![Build Status](https://travis-ci.com/pagnani/PlmDCA.svg?branch=master)](https://travis-ci.com/pagnani/PlmDCA)
+
+
+
 
 Pseudo-likelihood maximization in [Julia](http://julialang.org). A
 complete description of the algorithm can be found at
