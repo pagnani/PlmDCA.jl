@@ -12,4 +12,4 @@ matrix:
 notifications:
   email: false
 after_success:
-  - julia -e 'using Pkg, PlmDCA; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder()); 
+  - julia -e 'using Pkg, PlmDCA; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
