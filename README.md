@@ -1,6 +1,7 @@
 PlmDCA
 ======
-[![Build Status](https://travis-ci.com/pagnani/PlmDCA.svg?branch=master)](https://travis-ci.com/pagnani/PlmDCA) [![Build status](https://ci.appveyor.com/api/projects/status/hnuowde2tpot8ni6/branch/master?svg=true)](https://ci.appveyor.com/project/pagnani/plmdca/branch/master)
+[![Build Status](https://travis-ci.com/pagnani/PlmDCA.svg?branch=master)](https://travis-ci.com/pagnani/PlmDCA) [![Build status](https://ci.appveyor.com/api/projects/status/hnuowde2tpot8ni6/branch/master?svg=true)](https://ci.appveyor.com/project/pagnani/plmdca/branch/master) [![codecov](https://codecov.io/gh/pagnani/GaussDCA.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/pagnani/GaussDCA.jl)
+
 
 
 
