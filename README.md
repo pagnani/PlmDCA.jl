@@ -1,5 +1,9 @@
 PlmDCA
 ======
+[![Build Status](https://travis-ci.com/pagnani/PlmDCA.svg?branch=master)](https://travis-ci.com/pagnani/PlmDCA) [![Build status](https://ci.appveyor.com/api/projects/status/hnuowde2tpot8ni6/branch/master?svg=true)](https://ci.appveyor.com/project/pagnani/plmdca/branch/master)
+
+
+
 
 Pseudo-likelihood maximization in [Julia](http://julialang.org). A
 complete description of the algorithm can be found at
@@ -19,7 +23,7 @@ The present software is a Julia implementation of above mentioned
 papers, with no reference to the original MATLAB
 [software](http://plmdca.csc.kth.se) implementation.
 
-The code now requires at least Julia version 0.6 or later.
+The code now requires at least Julia version 1.0 or later.
 
 Overview
 --------
@@ -35,26 +39,11 @@ of cores.
 Install
 -------
 
-It requires the installation of:
-
-* [NLopt.jl](https://github.com/JuliaOpt/NLopt.jl). 
-```
-julia> Pkg.add("NLopt")
-```
-* [GaussDCA](https://github.com/carlobaldassi/GaussDCA.jl)
-```
-julia> Pkg.clone("https://github.com/carlobaldassi/GaussDCA.jl")
-```
-* [PlmDCA] The PlmDCA module itself can be added with
-```
-julia> Pkg.clone("https://github.com/pagnani/PlmDCA")
-```
-To install the package under version >= 0.7 please use the new package manager (it can be activated from the REPL using the key `]`)
+To install the package under version >= 1.0 please use the new package manager (it can be activated from the REPL using the key `]`)
 
 ```
-(v0.7) pkg> add https://github.com/pagnani/PlmDCA #v07
+(v1.?) pkg> add https://github.com/pagnani/PlmDCA
 ```
-We have not tested yet the software on Windows.
 
 Usage
 -----
@@ -64,7 +53,7 @@ julia> using PlmDCA
 ```
 
 The software provides two main functions `plmdca(filename::String,
-...)` and `plmdcasym(filename::String,...)` (resp. the asymmetric and
+...)` and `plmdca_sym(filename::String,...)` (resp. the asymmetric and
 symmetric coupling version of the algorithm). Empirically it turns out
 that the asymmetric version is faster and more accurate. This function
 take as input the name of a (possibly zipped) multiple sequence.
@@ -81,10 +70,11 @@ methods):
 :LD_TNEWTON_PRECOND_RESTART, :LD_TNEWTON, :LD_VAR2, :LD_VAR1
 ```
 
-After some test we found that the best compromise between accuracy and
-speed is achieved by the Low Storage BFGS method `:LD_LBFGS`, which is
-the default method in the code. The other methods can be set changing
-the default optional argument (e.g. `method=:LD_SLSQP`).
+After some experiments we found that the best compromise between
+accuracy and speed is achieved by the Low Storage BFGS method
+`:LD_LBFGS`, which is the default method in the code. The other
+methods can be set changing the default optional argument
+(e.g. `method=:LD_SLSQP`).
 
 There are more optional arguments that can be set (to be documented...).
 
@@ -105,7 +95,7 @@ multiple sequence alignment, and `q` is the alphabet "size" (typically
 Requirements
 ---
 
-The minimal julia version for using this code is 0.6.
+The minimal julia version for using this code is 1.0.
 
 Todos 
 ----- 
