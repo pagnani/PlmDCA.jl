@@ -1,4 +1,4 @@
-function plmdcasym(filename::AbstractString;
+function plmdca_sym(Z::Array{T,2},W::Vector{Float64};
                 decimation::Bool=false,
                 fracmax::Float64 = 0.3,
                 fracdec::Float64 = 0.1,
@@ -9,33 +9,45 @@ function plmdcasym(filename::AbstractString;
                 theta = :auto, 
                 lambdaJ::Real=0.01, 
                 lambdaH::Real=0.01,
-                gaugecol::Int=-1,
                 epsconv::Real=1.0e-5,
                 maxit::Int=1000,
                 verbose::Bool=true,
-                method::Symbol=:LD_LBFGS)
-    
-    gaugecol >= 1 && println("Warning: gaugecol not implemented. Proceeding ...")
+                method::Symbol=:LD_LBFGS) where T<: Integer
 
-    W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta, remove_dups)
+    all(all(x->x>0,W)) || throw(DomainError("vector W should normalized and with all positive elements"))
+    isapprox(sum(W),1) || throw(DomainError("sum(W) ≠ 1. Consider normalizing the vector W"))
 
-    plmalg = PlmAlg(method,verbose, epsconv ,maxit, nothing)
-    plmvar = PlmVar(N,M,q,q*q,gaugecol,lambdaJ,lambdaH,Z,W)
+    N,M = size(Z)
+    M = length(W)
+    q = Int(maximum(Z))
 
-    if decimation == false
-        Jmat, pseudolike = MinimizePLSym(plmalg,plmvar) 
+    plmalg = PlmAlg(method,verbose, epsconv ,maxit)
+    plmvar = PlmVar(N,M,q,q*q,lambdaJ,lambdaH,Z,W)
+
+    Jmat,pseudolike = if decimation == false
+        MinimizePLSym(plmalg,plmvar) 
     else
         if blockdecimate
             decvar = DecVar{1}(fracdec, fracmax, blockdecimate, ones(Bool, binomial(N,2)))
         else
             decvar = DecVar{1}(fracdec, fracmax, blockdecimate, ones(Bool, binomial(N,2)*q*q+N*q))        
         end
-        Jmat, pseudolike = DecimateSym!(plmvar, plmalg, decvar)
+        DecimateSym!(plmvar, plmalg, decvar)
     end
     score, Jtens, htens = ComputeScoreSym(Jmat, plmvar, min_separation)
-    return output = PlmOut{3}(pseudolike, Jtens, htens, score)    
+
+    return PlmOut(pseudolike, Jtens, htens, score)    
 end
-    
+
+function plmdca_sym(filename::String;
+                theta::Union{Symbol,Real}=:auto,
+                max_gap_fraction::Real=0.9,
+                remove_dups::Bool=true,
+                kwds...)
+    W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta, remove_dups)
+    plmdca_sym(Z,W; kwds...)
+end
+
 function MinimizePLSym(alg::PlmAlg, var::PlmVar)
 
     N  = var.N
@@ -53,14 +65,13 @@ function MinimizePLSym(alg::PlmAlg, var::PlmVar)
     maxeval!(opt, alg.maxit)
     min_objective!(opt, (x,g)->optimfunwrapper(x,g,var))
     elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
-    @printf("pl = %.4f\t time = %.4f\t exit status = ", minf, elapstime)
-    println(ret)
+    alg.verbose && @printf("pl = %.4f\t time = %.4f\t exit status = ", minf, elapstime)
+    alg.verbose && println(ret)
     
     return minx, minf
 end
 
 function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::Int)
-
 
     LL = length(Jvec)
     N=var.N
@@ -89,7 +100,7 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
     end
     FN = GaussDCA.correct_APC(FN)  
     score = GaussDCA.compute_ranking(FN,min_separation)
-    return score, Jtens,htens
+    return score, inflate_matrix(Jtens,N),htens
 end
 
 function PLsiteAndGradSym!(vecJ::Array{Float64,1}, grad::Array{Float64,1}, plmvar::PlmVar)
@@ -110,7 +121,7 @@ function PLsiteAndGradSym!(vecJ::Array{Float64,1}, grad::Array{Float64,1}, plmva
     for i=(LL-N*q + 1):LL
         grad[i] = 4.0 * vecJ[i] * lambdaH
     end
-    pseudolike = 0
+    pseudolike = 0.0
     for a = 1:M         
         pseudolike += ComputePatternPLSym!(grad, vecJ, Z[:,a], W[a], N, q, q2)
     end
@@ -120,7 +131,7 @@ function PLsiteAndGradSym!(vecJ::Array{Float64,1}, grad::Array{Float64,1}, plmva
 end
 
 function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::Array{Float64,1}, Z::Array{Int,1}, Wa::Float64, N::Int, q::Int, q2::Int)
-    
+
     vecene = zeros(Float64,q)
     expvecenesunorm = zeros(Float64,q)
     pseudolike = 0
@@ -154,8 +165,6 @@ end
 
 function fillvecenesym!(vecene::Array{Float64,1}, vecJ::Array{Float64,1}, Z::Array{Int64,1}, site::Int, q::Int ,N::Int)
     q2 = q*q
-#    Z = sdata(sZ)
-
     @inbounds begin
         for l = 1:q
             offset::Int = 0
@@ -167,9 +176,9 @@ function fillvecenesym!(vecene::Array{Float64,1}, vecJ::Array{Float64,1}, Z::Arr
     	    for i = site+1:N
                 scra += vecJ[ mygetindex(site, i, l, Z[i], N, q, q2)]
             end # End sum_i \neq site J
-            scra *= 0.5 
+#           scra *= 0.5
             offset = mygetindex(N-1, N, q, q, N, q, q2)  + ( site - 1) * q  # last J element + (site-1)*q
-#            println(length(vecJ), " offset ", offset) 
+
             scra += vecJ[offset + l] # sum H 
             vecene[l] = scra
         end
