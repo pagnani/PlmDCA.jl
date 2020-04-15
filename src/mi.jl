@@ -1,13 +1,12 @@
-function mutualinfo(filename::AbstractString;
+function mutualinfo(Z::Array{T,2};
                     remove_dups::Bool=true,
                     min_separation::Int=1,
-                    max_gap_fraction::Real=0.9,
                     pseudocount::Real=0.2,
                     theta=:auto,
                     output=:matrix # either :matrix, :score (i,j,val) or :apcscore
-                    )
+                    ) where T <: Integer 
 
-    Z = GaussDCA.read_fasta_alignment(filename, max_gap_fraction)
+
     q = Int(maximum(Z))
     Pi_true, Pij_true, Meff, _ = GaussDCA.compute_new_frequencies(Z, q,  theta)
     N = div(length(Pi_true),q-1)
@@ -39,6 +38,13 @@ function mutualinfo(filename::AbstractString;
     else
         error("$output: output format not supported. Only :matrix, :score, :apcscore")
     end
+end
+
+function mutualinfo(filename::String;
+                    max_gap_fraction::Real=0.9,
+                    kwds...)
+    Z = GaussDCA.read_fasta_alignment(filename, max_gap_fraction)
+    mutualinfo(Z; kwds...)             
 end
 
 
