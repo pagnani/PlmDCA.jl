@@ -64,13 +64,15 @@ function testDCA(N,q;
     Jplm,hplm = resplm.Jtensor,resplm.htensor
     Jz,hz = PottsGauge.gauge(J,h,gauge)
     Jplmz,hplmz = PottsGauge.gauge(Jplm,hplm,gauge)
-#    return Jplmz,hplmz,Jz,hz,Jplm,hplm,J,h
-    return sum(abs2,Jz-Jplmz)<1e-6
+
+    @test sum(abs2,Jz-Jplmz)<1e-6
+    @test sum(abs2,hz-hplmz)<1e-6
+    nothing
 end
 for tf in (true, false) # asymmetric (true) and symmetric (false
-    @test testDCA(4,2,lambdaJ=1e-7,epsconv=1e-20,asym=tf,verbose=true)
-    @test testDCA(6,2,lambdaJ=1e-7,epsconv=1e-20,asym=tf,verbose=true)
-    @test testDCA(4,3,lambdaJ=1e-7,epsconv=1e-20,asym=tf,verbose=true)
+    testDCA(4,2,lambdaJ=1e-5,epsconv=1e-30,asym=tf,verbose=true)
+    testDCA(6,2,lambdaJ=1e-5,epsconv=1e-30,asym=tf,verbose=true)
+    testDCA(4,3,lambdaJ=1e-6,epsconv=1e-30,asym=tf,verbose=true)
 end
 printstyled("All TestDCA passed!\n",color=:light_green,bold=true)
 end
