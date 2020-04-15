@@ -1,10 +1,6 @@
 PlmDCA
 ======
-[![Build Status](https://travis-ci.com/pagnani/PlmDCA.svg?branch=master)](https://travis-ci.com/pagnani/PlmDCA) [![Build status](https://ci.appveyor.com/api/projects/status/hnuowde2tpot8ni6/branch/master?svg=true)](https://ci.appveyor.com/project/pagnani/plmdca/branch/master) [![codecov](https://codecov.io/gh/pagnani/PlmDCA.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/pagnani/PlmDCA.jl)
-
-
-
-
+[![Build Status](https://travis-ci.com/pagnani/PlmDCA.svg?branch=master)](https://travis-ci.com/pagnani/PlmDCA) [![Build status](https://ci.appveyor.com/api/projects/status/hnuowde2tpot8ni6/branch/master?svg=true)](https://ci.appveyor.com/project/pagnani/plmdca/branch/master) [![codecov](https://codecov.io/gh/pagnani/PlmDCA/branch/master/graph/badge.svg)](https://codecov.io/gh/pagnani/PlmDCA)
 
 Pseudo-likelihood maximization in [Julia](http://julialang.org). A
 complete description of the algorithm can be found at
