@@ -1,6 +1,6 @@
 using PlmDCA,Test
 
-tests = ["testdca","testcorr"]
+tests = ["testdca","testcorr","testmi"]
 
 printstyled("Running tests:\n", bold=true, color=:light_blue)
 
