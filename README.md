@@ -22,6 +22,15 @@ papers, with no reference to the original MATLAB
 
 The code now requires at least Julia version 1.0 or later.
 
+Install
+-------
+
+To install the package under version >= 1.0 please use the new package manager (it can be activated from the REPL using the key `]`). Once in the package manager install the two packages in the following order:
+```
+(v1.?) pkg> add https://github.com/pagnani/PottsGauge
+(v1.?) pkg> https://github.com/pagnani/PlmDCA
+```
+
 Overview
 --------
 
@@ -33,14 +42,6 @@ multiple cores previous ``addprocs(nprocs)`` where ``nprocs`` should
 be some integer number `np` lower or equal to your (physical) number
 of cores.
 
-Install
--------
-
-To install the package under version >= 1.0 please use the new package manager (it can be activated from the REPL using the key `]`)
-
-```
-(v1.?) pkg> add https://github.com/pagnani/PlmDCA
-```
 
 Usage
 -----
