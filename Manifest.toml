@@ -5,9 +5,9 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[BinDeps]]
 deps = ["Libdl", "Pkg", "SHA", "URIParser", "Unicode"]
-git-tree-sha1 = "66158ad56b4bf6cc8413b37d0b7bc52402682764"
+git-tree-sha1 = "46cf2c1668ad07aba5a9d331bdeea994a1f13856"
 uuid = "9e28174c-4ba2-5203-b857-d8d62c4213ee"
-version = "1.0.0"
+version = "1.0.1"
 
 [[BinaryProvider]]
 deps = ["Libdl", "SHA"]
@@ -59,9 +59,9 @@ version = "0.8.1"
 
 [[Documenter]]
 deps = ["Base64", "Dates", "DocStringExtensions", "InteractiveUtils", "JSON", "LibGit2", "Logging", "Markdown", "REPL", "Test", "Unicode"]
-git-tree-sha1 = "f4c8a9965af27e3c4d1c7b248f6db102e8e3a74e"
+git-tree-sha1 = "bc99c157ff2957c058a1067061d16c2c83d1ec42"
 uuid = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-version = "0.24.8"
+version = "0.24.9"
 
 [[FastaIO]]
 deps = ["GZip"]
@@ -85,9 +85,9 @@ version = "0.0.0"
 
 [[HTTP]]
 deps = ["Base64", "Dates", "IniFile", "MbedTLS", "Sockets"]
-git-tree-sha1 = "cd60d9a575d3b70c026d7e714212fd4ecf86b4bb"
+git-tree-sha1 = "fe31f4ff144392ad8176f5c7c03cca6ba320271c"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "0.8.13"
+version = "0.8.14"
 
 [[IniFile]]
 deps = ["Test"]
@@ -130,9 +130,9 @@ version = "0.7.8"
 
 [[MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "Random", "Sockets"]
-git-tree-sha1 = "a9e2221f06b42f56052f43ad7edecb01d0ef5ab4"
+git-tree-sha1 = "426a6978b03a97ceb7ead77775a1da066343ec6e"
 uuid = "739be429-bea8-5141-9913-cc70e7f3736d"
-version = "1.0.1"
+version = "1.0.2"
 
 [[MbedTLS_jll]]
 deps = ["Libdl", "Pkg"]
@@ -173,11 +173,11 @@ uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 
 [[PottsGauge]]
 deps = ["Coverage", "Documenter", "Random", "Statistics", "Test"]
-git-tree-sha1 = "1268aeacbafa409c5c9be0c7de6fa0045c281d99"
+git-tree-sha1 = "60583472d1dad1655ee72ff9234ca32008aa4a65"
 repo-rev = "master"
 repo-url = "https://github.com/pagnani/PottsGauge"
 uuid = "3bb3bcb6-c561-57d3-939c-408d524c1e5b"
-version = "0.0.0"
+version = "0.1.0"
 
 [[Printf]]
 deps = ["Unicode"]
