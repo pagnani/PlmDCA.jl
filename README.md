@@ -87,7 +87,7 @@ multiple sequence alignment, and `q` is the alphabet "size" (typically
 21 for proteins).
 *  `X.htensor`: the external field `h[r_i,i]` `q x N` array.
 *  `X.pslike`: the pseudolikelihood
-*  `X.score`:  a `Tuple{Int,Int,Float64}` in (in julia version 0.4) vector of Tuples containing the candidate contact descending order (residue1, residue2 , score12).
+*  `X.score`:  a  vector of `Tuple{Int,Int,Float64}` containing the candidate contacts descending order (residue1, residue2 , score12).
 
 Requirements
 ---
