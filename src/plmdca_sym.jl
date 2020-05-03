@@ -14,7 +14,8 @@ function plmdca_sym(Z::Array{T,2},W::Vector{Float64};
                 verbose::Bool=true,
                 method::Symbol=:LD_LBFGS) where T<: Integer
 
-    all(all(x->x>0,W)) || throw(DomainError("vector W should normalized and with all positive elements"))
+
+    all(x->x>0,W) || throw(DomainError("vector W should normalized and with all positive elements"))
     isapprox(sum(W),1) || throw(DomainError("sum(W) ≠ 1. Consider normalizing the vector W"))
 
     N,M = size(Z)
@@ -49,21 +50,22 @@ function plmdca_sym(filename::String;
 end
 
 function MinimizePLSym(alg::PlmAlg, var::PlmVar)
-
+    
     N  = var.N
     q  = var.q
     q2 = var.q2
-    
+    Z = var.Z
     Nc2 = binomial(N,2)
     LL  = Nc2 * q2  + N * q 
 
     x0 = zeros(Float64, LL)
-    
+    batchidx = myrange(Z)
+
     opt = Opt(alg.method, length(x0))
     
     ftol_abs!(opt, alg.epsconv)
     maxeval!(opt, alg.maxit)
-    min_objective!(opt, (x,g)->optimfunwrapper(x,g,var))
+    min_objective!(opt, (x,g)->like_grad!(g,x,var,batchidx))
     elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
     alg.verbose && @printf("pl = %.4f\t time = %.4f\t exit status = ", minf, elapstime)
     alg.verbose && println(ret)
@@ -103,7 +105,47 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
     return score, inflate_matrix(Jtens,N),htens
 end
 
-function PLsiteAndGradSym!(vecJ::Array{Float64,1}, grad::Array{Float64,1}, plmvar::PlmVar)
+
+
+function myrange(q::DenseMatrix)
+    nchunks = nprocs()
+    nchunks > 2 || (return [1:size(q,2),])
+    splits = [round(Int, s) for s in range(0, stop=size(q,2), length=nchunks)]
+    [splits[idx]+1:splits[idx+1] for idx in 1:nchunks-1]
+end
+
+reduce_res(x::Tuple) = x
+(reduce_res(x::Vector{T}) where T<:Tuple) = broadcast(+,x...)
+
+function like_grad!(g::Vector,vecJ::Vector,plmvar::PlmVar,vec_chunk)
+    g === nothing && (g = zero(vecJ))
+    res = @distributed vcat for chunk in vec_chunk
+        pl_chunk, gr_chunk = plm_site_grad(vecJ, plmvar, chunk)
+    end
+    pl,gr = reduce_res(res)
+    pl += L2norm_sym(vecJ, plmvar)
+    println("pl = $pl")
+    add_l2grad!(gr,vecJ, plmvar)
+    g .= gr
+    return pl 
+end
+
+function add_l2grad!(grad::Vector,vecJ::Vector,plmvar::PlmVar)
+    N = plmvar.N
+    LL = length(grad)
+    q = plmvar.q
+    lambdaJ = plmvar.lambdaJ
+    lambdaH = plmvar.lambdaH
+    for i in 1:LL-N*q
+        grad[i] += 2.0 * vecJ[i] * lambdaJ
+    end
+    for i in (LL-N*q + 1):LL
+        grad[i] += 4.0 * vecJ[i] * lambdaH
+    end
+    nothing
+end
+
+function plm_site_grad(vecJ::Array{Float64,1}, plmvar::PlmVar,chunk)
 
     LL = length(vecJ)
     q2 = plmvar.q2
@@ -112,43 +154,36 @@ function PLsiteAndGradSym!(vecJ::Array{Float64,1}, grad::Array{Float64,1}, plmva
     M = plmvar.M
     Z = plmvar.Z
     W = plmvar.W
-    lambdaJ = plmvar.lambdaJ
-    lambdaH = plmvar.lambdaH
-
-    for i=1:LL-N*q
-        grad[i] = 2.0 * vecJ[i] * lambdaJ
-    end
-    for i=(LL-N*q + 1):LL
-        grad[i] = 4.0 * vecJ[i] * lambdaH
-    end
+   
+    grad = zero(vecJ)
     pseudolike = 0.0
-    for a = 1:M         
-        pseudolike += ComputePatternPLSym!(grad, vecJ, Z[:,a], W[a], N, q, q2)
+    for a in chunk
+        pseudolike += ComputePatternPLSym!(grad, vecJ, Z[:,a],W[a], N, q, q2)
     end
-    
-    pseudolike += L2norm_sym(vecJ, plmvar)
-    return pseudolike 
+   
+    return pseudolike,grad 
 end
 
-function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::Array{Float64,1}, Z::Array{Int,1}, Wa::Float64, N::Int, q::Int, q2::Int)
+function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::Array{Float64,1}, Z::AbstractArray{Int,1}, Wa::Float64, N::Int, q::Int, q2::Int)
 
     vecene = zeros(Float64,q)
     expvecenesunorm = zeros(Float64,q)
     pseudolike = 0
     offset = mygetindex(N-1, N, q, q, N, q, q2) 
-    @inbounds for site=1:N    # site < i 
+#    println("typeof = ",typeof(Z))
+    @inbounds for site=1:N    # site < i
         fillvecenesym!(vecene, vecJ, Z, site, q,N)        
         norm = sumexp(vecene)
         expvecenesunorm = exp.(vecene .- log(norm))
         pseudolike -= Wa * ( vecene[Z[site]] - log(norm) )
-	for i = 1:(site-1)
-            for s = 1:q
+	@simd for i = 1:(site-1)
+             for s = 1:q
                 grad[ mygetindex(i, site, Z[i], s, N, q, q2) ] += 0.5 * Wa * expvecenesunorm[s]
             end
             grad[ mygetindex(i, site , Z[i], Z[site],  N,q,q2)] -= 0.5 * Wa
         end
-	for i = (site+1):N 
-            for s = 1:q
+	@simd for i = (site+1):N 
+             for s = 1:q
                 grad[ mygetindex(site, i , s,  Z[i], N,q,q2) ] += 0.5 * Wa * expvecenesunorm[s]
             end
             grad[ mygetindex(site, i , Z[site], Z[i], N,q,q2)] -= 0.5* Wa
@@ -163,7 +198,7 @@ function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::Array{Float64,1}, Z:
 end
 
 
-function fillvecenesym!(vecene::Array{Float64,1}, vecJ::Array{Float64,1}, Z::Array{Int64,1}, site::Int, q::Int ,N::Int)
+function fillvecenesym!(vecene::Array{Float64,1}, vecJ::Array{Float64,1}, Z::AbstractArray{Int64,1}, site::Int, q::Int ,N::Int)
     q2 = q*q
     @inbounds begin
         for l = 1:q
@@ -211,7 +246,7 @@ function L2norm_sym(vec::Array{Float64,1}, var::PlmVar)
 end
 
 
-function mygetindex( i::Int, j::Int, coli::Int, colj::Int, N::Int, q::Int, q2::Int)        
+@inline function mygetindex( i::Int, j::Int, coli::Int, colj::Int, N::Int, q::Int, q2::Int)        
     offset_i = ( (i-1) * N  - ( (i * ( i -1 ) ) >> 1 ) ) * q2 # (i-1) N q2 + i (i-1) q2 / 2  
     offset_j = (j - i - 1 ) * q2
     return offset_i + offset_j + coli + q * (colj - 1)
