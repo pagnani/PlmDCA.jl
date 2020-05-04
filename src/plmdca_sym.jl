@@ -172,7 +172,7 @@ function fillvecenesym!(vecene::AbstractArray, vecJ::AbstractVector, Z::Abstract
             offset::Int = 0
             scra::Float64 = 0.0
 
-            for i=1:1:site-1
+            for i=1:site-1
                 scra += vecJ[ mygetindex(i, site, Z[i], l,  N, q, q2)]
             end
     	    for i = site+1:N
@@ -213,7 +213,7 @@ function L2norm_sym(vec::AbstractVector, var::PlmVar)
 end
 
 
-@inline function mygetindex( i::Int, j::Int, coli::Int, colj::Int, N::Int, q::Int, q2::Int)        
+@inline function mygetindex( i::Int, j::Int, coli::Int, colj::Int, N::Int, q::Int, q2::Int)
     offset_i = ( (i-1) * N  - ( (i * ( i -1 ) ) >> 1 ) ) * q2 # (i-1) N q2 + i (i-1) q2 / 2  
     offset_j = (j - i - 1 ) * q2
     return offset_i + offset_j + coli + q * (colj - 1)
