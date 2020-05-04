@@ -69,10 +69,13 @@ function testDCA(N,q;
     @test sum(abs2,hz-hplmz)<1e-6
     nothing
 end
-for tf in (true, false) # asymmetric (true) and symmetric (false
+for tf in (true, false) # asymmetric (true) and symmetric (false    
     testDCA(4,2,lambdaJ=1e-5,epsconv=1e-30,asym=tf,verbose=true)
+    Base.GC.gc() # strange gc needed for SharedArrays ????
     testDCA(6,2,lambdaJ=1e-5,epsconv=1e-30,asym=tf,verbose=true)
+    Base.GC.gc()
     testDCA(4,3,lambdaJ=1e-6,epsconv=1e-30,asym=tf,verbose=true)
+    Base.GC.gc()
 end
 printstyled("All TestDCA passed!\n",color=:light_green,bold=true)
 end
