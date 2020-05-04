@@ -63,7 +63,7 @@ function MinimizePLSym(alg::PlmAlg, var::PlmVar)
     opt = Opt(alg.method, length(x0))
     ftol_abs!(opt, alg.epsconv)
     maxeval!(opt, alg.maxit)
-    min_objective!(opt, (x,g)->like_grad!(g,x,var,batchidx))
+    min_objective!(opt, (x,g)->like_grad!(g,x,var,batchidx,alg.verbose))
     elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
     alg.verbose && @printf("pl = %.4f\t time = %.4f\t exit status = ", minf, elapstime)
     alg.verbose && println(ret)
@@ -81,7 +81,7 @@ end
 reduce_res(x::Tuple) = x
 (reduce_res(x::Vector{T}) where T<:Tuple) = broadcast(+,x...)
 
-function like_grad!(g::Vector,vecJ::AbstractVector,plmvar::PlmVar,vec_chunk)
+function like_grad!(g::Vector,vecJ::AbstractVector,plmvar::PlmVar,vec_chunk,verbose)
 
     g === nothing && (g = zero(vecJ))
     sJ = SharedArray(vecJ)
@@ -90,7 +90,7 @@ function like_grad!(g::Vector,vecJ::AbstractVector,plmvar::PlmVar,vec_chunk)
     end
     pl,gr = reduce_res(res)
     pl += L2norm_sym(vecJ, plmvar)
-    println("pl = $pl")
+    verbose && println("pl = $pl")
     add_l2grad!(gr,vecJ, plmvar)
     g .= gr
     return pl 
@@ -134,7 +134,7 @@ end
 function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::AbstractVector, Z::AbstractArray{Int,1}, Wa::Float64, N::Int, q::Int, q2::Int)
     vecene = zeros(Float64,q)
     expvecenesunorm = zeros(Float64,q)
-    pseudolike = 0
+    pseudolike = 0.0
     offset = mygetindex(N-1, N, q, q, N, q, q2) 
 
     @inbounds for site=1:N    # site < i
@@ -168,7 +168,7 @@ function fillvecenesym!(vecene::AbstractArray, vecJ::AbstractVector, Z::Abstract
     q2 = q*q
 
     @inbounds begin
-        for l = 1:q
+        @simd for l = 1:q
             offset::Int = 0
             scra::Float64 = 0.0
 
