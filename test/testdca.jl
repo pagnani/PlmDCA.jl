@@ -90,7 +90,7 @@ function testDCA(N,q;
         end
         # sum_a h_i(a) = 0
         for i in 1:N
-            @test abs(sum(hplm[:,i]))<epstest
+            @test abs(sum(hplm[:,i])) < epstest
         end
     else # symmetric case
         @test  sum(abs2,Jz-Jplm)<epstest
