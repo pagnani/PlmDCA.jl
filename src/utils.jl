@@ -53,7 +53,7 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
 
     FN = compute_APC(Jtensor,N,q)
     score = GaussDCA.compute_ranking(FN,min_separation)
-    println("ciao1")
+
     return score, FN, Jplm, hplm
 end
 

@@ -51,7 +51,7 @@ function testDCA(N,q;
                  epsconv::Real=1e20,
                  gauge = ZeroSumGauge(),
                  lambdaJ::Real = 0.0,
-                 lambdaH=0.0,
+                 lambdaH::Real = 0.0,
                  asym::Bool=true,
                  maxit::Integer=1000,
                  method::Symbol=:LD_LBFGS,
@@ -74,7 +74,7 @@ function testDCA(N,q;
     Jplmz,hplmz = PottsGauge.gauge(Jplm,hplm,gauge)
 
     if asym
-        if lambdaJ == 0 && lambdaH == 0 # J h are equal only for lambdas = 0!!
+        if lambdaJ < 1e-5 && lambdaH == 0 # J h are equal only for lambdas = 0!!
             @test  sum(abs2,Jz-Jplmz)<epstest
             @test  sum(abs2,hz-hplmz)<epstest
         end
@@ -90,7 +90,7 @@ function testDCA(N,q;
         end
         # sum_a h_i(a) = 0
         for i in 1:N
-            @test sum(abs2,hplm[:,i])<epstest
+            @test abs(sum(hplm[:,i]))<epstest
         end
     else # symmetric case
         @test  sum(abs2,Jz-Jplm)<epstest
