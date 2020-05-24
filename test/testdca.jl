@@ -93,15 +93,16 @@ function testDCA(N,q;
             @test abs(sum(hplm[:,i])) < epstest
         end
     else # symmetric case
-        @test  sum(abs2,Jz-Jplm)<epstest
-        @test  sum(abs2,hz-hplm)<epstest
+        @test  sum(abs2,Jz-Jplmz)<epstest
+        @test  sum(abs2,hz-hplmz)<epstest
     end
     nothing
 end
 for tf in (true, false) # asymmetric (true) and symmetric (false
-    testDCA(4,2,lambdaJ=1e-5,epsconv=1e-30,asym=tf,verbose=true)
-    testDCA(6,2,lambdaJ=1e-5,epsconv=1e-30,asym=tf,verbose=true)
-    testDCA(4,3,lambdaJ=1e-6,epsconv=1e-30,asym=tf,verbose=true)
+    lambdaJ =  tf ? 1e-5 : 0.0
+    testDCA(4,2,lambdaJ=lambdaJ,epsconv=1e-30,asym=tf,verbose=true)
+    testDCA(6,2,lambdaJ=lambdaJ,epsconv=1e-30,asym=tf,verbose=true)
+    testDCA(4,3,lambdaJ=lambdaJ,epsconv=1e-30,asym=tf,verbose=true)
 end
 printstyled("All TestDCA passed!\n",color=:light_green,bold=true)
 end
