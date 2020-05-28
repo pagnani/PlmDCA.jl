@@ -107,7 +107,7 @@ for tf in (true, false) # asymmetric (true) and symmetric (false
     testDCA(4,3,lambdaJ=lambdaJ,epsconv=1e-30,asym=tf,verbose=true)
 end
 
-testDCA(6,2,lambdaJ=0.01,epsconv=0.03,asym=false,verbose=true) 
+testDCA(6,2,lambdaJ=0.01,epsconv=0.03,asym=false,verbose=true)
 
 
 printstyled("All TestDCA passed!\n",color=:light_green,bold=true)
