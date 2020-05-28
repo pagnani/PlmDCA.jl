@@ -5,9 +5,9 @@ function plmdca_sym(Z::Array{T,2},W::Vector{Float64};
                 blockdecimate::Bool=true, # decimate on a per-block base (all J[:,:,i,j] = 0)
                 remove_dups::Bool = true,
                 min_separation::Int = 1,
-                max_gap_fraction::Real = 0.9, 
-                theta = :auto, 
-                lambdaJ::Real=0.01, 
+                max_gap_fraction::Real = 0.9,
+                theta = :auto,
+                lambdaJ::Real=0.01,
                 lambdaH::Real=0.01,
                 epsconv::Real=1.0e-5,
                 maxit::Int=1000,
@@ -26,18 +26,18 @@ function plmdca_sym(Z::Array{T,2},W::Vector{Float64};
     plmvar = PlmVar(N,M,q,q*q,lambdaJ,lambdaH,Z,W)
 
     Jmat,pseudolike = if decimation == false
-        MinimizePLSym(plmalg,plmvar) 
+        MinimizePLSym(plmalg,plmvar)
     else
         if blockdecimate
             decvar = DecVar{1}(fracdec, fracmax, blockdecimate, ones(Bool, binomial(N,2)))
         else
-            decvar = DecVar{1}(fracdec, fracmax, blockdecimate, ones(Bool, binomial(N,2)*q*q+N*q))        
+            decvar = DecVar{1}(fracdec, fracmax, blockdecimate, ones(Bool, binomial(N,2)*q*q+N*q))
         end
         DecimateSym!(plmvar, plmalg, decvar)
     end
     score, Jtens, htens = ComputeScoreSym(Jmat, plmvar, min_separation)
 
-    return PlmOut(pseudolike, Jtens, htens, score)    
+    return PlmOut(pseudolike, Jtens, htens, score)
 end
 
 function plmdca_sym(filename::String;
@@ -50,13 +50,13 @@ function plmdca_sym(filename::String;
 end
 
 function MinimizePLSym(alg::PlmAlg, var::PlmVar)
-    
+
     N  = var.N
     q  = var.q
     q2 = var.q2
     Z = var.Z
     Nc2 = binomial(N,2)
-    LL  = Nc2 * q2  + N * q 
+    LL  = Nc2 * q2  + N * q
 
     x0 = zeros(Float64, LL)
     batchidx = myrange(Z)
@@ -67,7 +67,7 @@ function MinimizePLSym(alg::PlmAlg, var::PlmVar)
     elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
     alg.verbose && @printf("pl = %.4f\t time = %.4f\t exit status = ", minf, elapstime)
     alg.verbose && println(ret)
-    
+
     return minx, minf
 end
 
@@ -93,7 +93,7 @@ function like_grad!(g::Vector,vecJ::AbstractVector,plmvar::PlmVar,vec_chunk,verb
     verbose && println("pl = $pl")
     add_l2grad!(gr,vecJ, plmvar)
     g .= gr
-    return pl 
+    return pl
 end
 
 function add_l2grad!(grad::Vector,vecJ::AbstractVector,plmvar::PlmVar)
@@ -127,18 +127,18 @@ function plm_site_grad(vecJ::AbstractVector, plmvar::PlmVar,chunk)
     for a in chunk
         pseudolike += ComputePatternPLSym!(grad, vecJ, Z[:,a],W[a], N, q, q2)
     end
-   
-    return pseudolike,grad 
+
+    return pseudolike,grad
 end
 
 function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::AbstractVector, Z::AbstractArray{Int,1}, Wa::Float64, N::Int, q::Int, q2::Int)
     vecene = zeros(Float64,q)
     expvecenesunorm = zeros(Float64,q)
     pseudolike = 0.0
-    offset = mygetindex(N-1, N, q, q, N, q, q2) 
+    offset = mygetindex(N-1, N, q, q, N, q, q2)
 
     @inbounds for site=1:N    # site < i
-        fillvecenesym!(vecene, vecJ, Z, site, q,N)        
+        fillvecenesym!(vecene, vecJ, Z, site, q,N)
         norm = sumexp(vecene)
         expvecenesunorm .= exp.(vecene .- log(norm))
         pseudolike -= Wa * ( vecene[Z[site]] - log(norm) )
@@ -148,17 +148,17 @@ function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::AbstractVector, Z::A
             end
             grad[ mygetindex(i, site , Z[i], Z[site],  N,q,q2)] -= 0.5 * Wa
         end
-	@simd for i = (site+1):N 
+	@simd for i = (site+1):N
              for s = 1:q
                 grad[ mygetindex(site, i , s,  Z[i], N,q,q2) ] += 0.5 * Wa * expvecenesunorm[s]
             end
             grad[ mygetindex(site, i , Z[site], Z[i], N,q,q2)] -= 0.5* Wa
         end
-        @simd for s = 1:q 
-            grad[ offset + s ] += Wa *  expvecenesunorm[s] 
+        @simd for s = 1:q
+            grad[ offset + s ] += Wa *  expvecenesunorm[s]
         end
-	grad[ offset + Z[site] ] -= Wa
- 	offset += q
+		grad[ offset + Z[site] ] -= Wa
+ 		offset += q
     end
     return pseudolike
 end
@@ -178,10 +178,10 @@ function fillvecenesym!(vecene::AbstractArray, vecJ::AbstractVector, Z::Abstract
     	    for i = site+1:N
                 scra += vecJ[ mygetindex(site, i, l, Z[i], N, q, q2)]
             end # End sum_i \neq site J
-#           scra *= 0.5
+           	scra *= 0.5
             offset = mygetindex(N-1, N, q, q, N, q, q2)  + ( site - 1) * q  # last J element + (site-1)*q
 
-            scra += vecJ[offset + l] # sum H 
+            scra += vecJ[offset + l] # sum H
             vecene[l] = scra
         end
     end
@@ -189,7 +189,7 @@ end
 
 function L2norm_sym(vec::AbstractVector, var::PlmVar)
 
-    q = var.q    
+    q = var.q
     N = var.N
     lambdaJ = var.lambdaJ
     lambdaH = var.lambdaH
@@ -207,14 +207,14 @@ function L2norm_sym(vec::AbstractVector, var::PlmVar)
     @inbounds @simd for i=(LL - N*q + 1):LL
         mysum2 += vec[i] * vec[i]
     end
-    mysum2 *= 2lambdaH
-    
+    #mysum2 *= 2lambdaH
+    mysum2 *= lambdaH
     return mysum1+mysum2
 end
 
 
 @inline function mygetindex( i::Int, j::Int, coli::Int, colj::Int, N::Int, q::Int, q2::Int)
-    offset_i = ( (i-1) * N  - ( (i * ( i -1 ) ) >> 1 ) ) * q2 # (i-1) N q2 + i (i-1) q2 / 2  
+    offset_i = ( (i-1) * N  - ( (i * ( i -1 ) ) >> 1 ) ) * q2 # (i-1) N q2 + i (i-1) q2 / 2
     offset_j = (j - i - 1 ) * q2
     return offset_i + offset_j + coli + q * (colj - 1)
 end
@@ -233,12 +233,12 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
     J = zeros(q,q,Nc2)
 
     htens=reshape(Jvec[LL-N*q + 1:end],q,N)
-    
+
     for l=1:Nc2
         J[:,:,l] = Jtens[:,:,l] - repeat(mean(Jtens[:,:,l],dims=1),q,1)-repeat(mean(Jtens[:,:,l],dims=2),1,q) .+ mean(Jtens[:,:,l])
     end
-    
-    
+
+
     FN = zeros(Float64, N,N)
     l = 1
     for i=1:N-1
@@ -248,7 +248,7 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
             l+=1
         end
     end
-    FN = GaussDCA.correct_APC(FN)  
+    FN = GaussDCA.correct_APC(FN)
     score = GaussDCA.compute_ranking(FN,min_separation)
     return score, inflate_matrix(Jtens,N),htens
 end

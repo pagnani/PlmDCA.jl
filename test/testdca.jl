@@ -79,6 +79,10 @@ function testDCA(N,q;
             @test  sum(abs2,hz-hplmz)<epstest
         end
 
+
+    else # symmetric case
+        @test  sum(abs2,Jz-Jplmz)<epstest
+        @test  sum(abs2,hz-hplmz)<epstest
         # test symmetric gauge
         # \lambda_J \sum_{b}J_{i,j}(a,b) == \lambda_H h_i(a)
         # \lambda_J \sum_{a}J_{i,j}(a,b) == \lambda_H h_j(b)
@@ -92,9 +96,7 @@ function testDCA(N,q;
         for i in 1:N
             @test abs(sum(hplm[:,i])) < epstest
         end
-    else # symmetric case
-        @test  sum(abs2,Jz-Jplmz)<epstest
-        @test  sum(abs2,hz-hplmz)<epstest
+
     end
     nothing
 end
@@ -104,5 +106,9 @@ for tf in (true, false) # asymmetric (true) and symmetric (false
     testDCA(6,2,lambdaJ=lambdaJ,epsconv=1e-30,asym=tf,verbose=true)
     testDCA(4,3,lambdaJ=lambdaJ,epsconv=1e-30,asym=tf,verbose=true)
 end
+
+testDCA(6,2,lambdaJ=0.01,epsconv=0.03,asym=false,verbose=true) 
+
+
 printstyled("All TestDCA passed!\n",color=:light_green,bold=true)
 end
