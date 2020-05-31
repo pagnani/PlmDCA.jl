@@ -125,7 +125,7 @@ function PLsiteAndGrad!(vecJ::Array{Float64,1},  grad::Array{Float64,1}, site::I
             grad[ offset + Z[site,a] + q * ( Z[i,a] - 1 ) ] -= fact*W[a]
             offset += q2
         end
-	for i = site+1:N
+		for i = site+1:N
             @simd for s = 1:q
                 grad[ offset + s + q * ( Z[i,a] - 1 ) ] += fact * W[a] *  expvecenesunorm[s]
             end
@@ -202,9 +202,9 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
     l = 1
     for i=1:(N-1)
         for j=(i+1):N
-            Jtemp1[:,:,l]=JJ[:,:,j-1,i]; #J_ij as estimated from from g_i.
-            Jtemp2[:,:,l]=JJ[:,:,i,j]'; #J_ij as estimated from from g_j.
-            l=l+1;
+            Jtemp1[:,:,l]=JJ[:,:,j-1,i] #J_ij as estimated from from g_i.
+            Jtemp2[:,:,l]=JJ[:,:,i,j]' #J_ij as estimated from from g_j.
+            l=l+1
         end
     end
 

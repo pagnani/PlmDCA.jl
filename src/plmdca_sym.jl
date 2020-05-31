@@ -81,6 +81,49 @@ end
 reduce_res(x::Tuple) = x
 (reduce_res(x::Vector{T}) where T<:Tuple) = broadcast(+,x...)
 
+
+function L2norm_sym(vec::AbstractVector, var::PlmVar)
+
+    q = var.q
+    N = var.N
+    lambdaJ = var.lambdaJ
+    lambdaH = var.lambdaH
+
+    LL = length(vec)
+
+
+    mysum1 = 0.0
+    @inbounds @simd for i in 1:(LL-N*q)
+        mysum1 += vec[i] * vec[i]
+    end
+    mysum1 *= lambdaJ
+
+    mysum2 = 0.0
+    @inbounds @simd for i in (LL - N*q + 1):LL
+        mysum2 += vec[i] * vec[i]
+    end
+    mysum2 *= 2lambdaH
+# 	mysum2 *= lambdaH
+    return mysum1+mysum2
+end
+
+function add_l2grad!(grad::Vector,vecJ::AbstractVector,plmvar::PlmVar)
+    N = plmvar.N
+    LL = length(grad)
+    q = plmvar.q
+    lambdaJ = plmvar.lambdaJ
+    lambdaH = plmvar.lambdaH
+    @inbounds begin
+        @simd for i in 1:LL-N*q
+            grad[i] += 1.0 * vecJ[i] * lambdaJ
+        end
+        @simd for i in (LL-N*q + 1):LL
+            grad[i] += 2.0 * vecJ[i] * lambdaH
+#			grad[i] += 2.0 * vecJ[i] * lambdaH
+        end
+    end
+    nothing
+end
 function like_grad!(g::Vector,vecJ::AbstractVector,plmvar::PlmVar,vec_chunk,verbose)
 
     g === nothing && (g = zero(vecJ))
@@ -94,23 +137,6 @@ function like_grad!(g::Vector,vecJ::AbstractVector,plmvar::PlmVar,vec_chunk,verb
     add_l2grad!(gr,vecJ, plmvar)
     g .= gr
     return pl
-end
-
-function add_l2grad!(grad::Vector,vecJ::AbstractVector,plmvar::PlmVar)
-    N = plmvar.N
-    LL = length(grad)
-    q = plmvar.q
-    lambdaJ = plmvar.lambdaJ
-    lambdaH = plmvar.lambdaH
-    @inbounds begin
-        @simd for i in 1:LL-N*q
-            grad[i] += 2.0 * vecJ[i] * lambdaJ
-        end
-        @simd for i in (LL-N*q + 1):LL
-            grad[i] += 4.0 * vecJ[i] * lambdaH
-        end
-    end
-    nothing
 end
 
 function plm_site_grad(vecJ::AbstractVector, plmvar::PlmVar,chunk)
@@ -142,13 +168,13 @@ function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::AbstractVector, Z::A
         norm = sumexp(vecene)
         expvecenesunorm .= exp.(vecene .- log(norm))
         pseudolike -= Wa * ( vecene[Z[site]] - log(norm) )
-	@simd for i = 1:(site-1)
+		@simd for i = 1:(site-1)
              for s = 1:q
                 grad[ mygetindex(i, site, Z[i], s, N, q, q2) ] += 0.5 * Wa * expvecenesunorm[s]
             end
             grad[ mygetindex(i, site , Z[i], Z[site],  N,q,q2)] -= 0.5 * Wa
         end
-	@simd for i = (site+1):N
+		@simd for i = (site+1):N
              for s = 1:q
                 grad[ mygetindex(site, i , s,  Z[i], N,q,q2) ] += 0.5 * Wa * expvecenesunorm[s]
             end
@@ -178,38 +204,13 @@ function fillvecenesym!(vecene::AbstractArray, vecJ::AbstractVector, Z::Abstract
     	    for i = site+1:N
                 scra += vecJ[ mygetindex(site, i, l, Z[i], N, q, q2)]
             end # End sum_i \neq site J
-           	scra *= 0.5
+           	#scra *= 0.5
             offset = mygetindex(N-1, N, q, q, N, q, q2)  + ( site - 1) * q  # last J element + (site-1)*q
 
             scra += vecJ[offset + l] # sum H
             vecene[l] = scra
         end
     end
-end
-
-function L2norm_sym(vec::AbstractVector, var::PlmVar)
-
-    q = var.q
-    N = var.N
-    lambdaJ = var.lambdaJ
-    lambdaH = var.lambdaH
-
-    LL = length(vec)
-
-
-    mysum1 = 0.0
-    @inbounds @simd for i=1:(LL-N*q)
-        mysum1 += vec[i] * vec[i]
-    end
-    mysum1 *= lambdaJ
-
-    mysum2 = 0.0
-    @inbounds @simd for i=(LL - N*q + 1):LL
-        mysum2 += vec[i] * vec[i]
-    end
-    #mysum2 *= 2lambdaH
-    mysum2 *= lambdaH
-    return mysum1+mysum2
 end
 
 
@@ -235,7 +236,10 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
     htens=reshape(Jvec[LL-N*q + 1:end],q,N)
 
     for l=1:Nc2
-        J[:,:,l] = Jtens[:,:,l] - repeat(mean(Jtens[:,:,l],dims=1),q,1)-repeat(mean(Jtens[:,:,l],dims=2),1,q) .+ mean(Jtens[:,:,l])
+        J[:,:,l] = Jtens[:,:,l] -
+					repeat(mean(Jtens[:,:,l],dims=1),q,1) -
+					repeat(mean(Jtens[:,:,l],dims=2),1,q) .+
+					mean(Jtens[:,:,l])
     end
 
 
@@ -250,7 +254,6 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
     end
     FN = GaussDCA.correct_APC(FN)
     score = GaussDCA.compute_ranking(FN,min_separation)
+	GC.gc() # something wrong with SharedArray
     return score, inflate_matrix(Jtens,N),htens
 end
-
-nothing

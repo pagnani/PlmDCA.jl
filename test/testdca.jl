@@ -55,7 +55,7 @@ function testDCA(N,q;
                  asym::Bool=true,
                  maxit::Integer=1000,
                  method::Symbol=:LD_LBFGS,
-                 epstest::Real=1e-6)
+                 epstest::Real=1e-5)
 
     W,Z,J,h = generateWZJh(N,q)
 
@@ -81,8 +81,10 @@ function testDCA(N,q;
 
 
     else # symmetric case
-        @test  sum(abs2,Jz-Jplmz)<epstest
-        @test  sum(abs2,hz-hplmz)<epstest
+        if lambdaJ == 0.0 && lambdaH == 0.0  # only without regularization
+            @test  sum(abs2,Jz-Jplmz)<epstest
+            @test  sum(abs2,hz-hplmz)<epstest
+        end
         # test symmetric gauge
         # \lambda_J \sum_{b}J_{i,j}(a,b) == \lambda_H h_i(a)
         # \lambda_J \sum_{a}J_{i,j}(a,b) == \lambda_H h_j(b)
