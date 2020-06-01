@@ -48,34 +48,69 @@ end
 
 function testDCA(N,q;
                  verbose::Bool=false,
-                 epsconv::Real=1e20, gauge = ZeroSumGauge(),
+                 epsconv::Real=1e20,
+                 gauge = ZeroSumGauge(),
                  lambdaJ::Real = 0.0,
-                 lambdaH=0.0,
+                 lambdaH::Real = 0.0,
                  asym::Bool=true,
                  maxit::Integer=1000,
-                 method::Symbol=:LD_LBFGS)
-   
+                 method::Symbol=:LD_LBFGS,
+                 epstest::Real=1e-5)
+
     W,Z,J,h = generateWZJh(N,q)
 
     func_dca = asym ? plmdca_asym : plmdca_sym
-    
-    resplm = func_dca(Z,W,lambdaJ=lambdaJ,lambdaH=lambdaH,epsconv=epsconv,verbose=verbose,maxit=maxit,method=method)
-   
+
+    resplm = func_dca(Z,W,
+                    lambdaJ=lambdaJ,
+                    lambdaH=lambdaH,
+                    epsconv=epsconv,
+                    verbose=verbose,
+                    maxit=maxit,
+                    method=method)
+
     Jplm,hplm = resplm.Jtensor,resplm.htensor
     Jz,hz = PottsGauge.gauge(J,h,gauge)
     Jplmz,hplmz = PottsGauge.gauge(Jplm,hplm,gauge)
 
-    @test sum(abs2,Jz-Jplmz)<1e-6
-    @test sum(abs2,hz-hplmz)<1e-6
+    if asym
+        if lambdaJ < 1e-5 && lambdaH == 0 # J h are equal only for lambdas = 0!!
+            @test  sum(abs2,Jz-Jplmz)<epstest
+            @test  sum(abs2,hz-hplmz)<epstest
+        end
+
+
+    else # symmetric case
+        if lambdaJ == 0.0 && lambdaH == 0.0  # only without regularization
+            @test  sum(abs2,Jz-Jplmz)<epstest
+            @test  sum(abs2,hz-hplmz)<epstest
+        end
+        # test symmetric gauge
+        # \lambda_J \sum_{b}J_{i,j}(a,b) == \lambda_H h_i(a)
+        # \lambda_J \sum_{a}J_{i,j}(a,b) == \lambda_H h_j(b)
+        for i in 1:N-1
+            for j in i+1:N
+                @test sum(abs2,lambdaJ * sum(Jplm[:,:,i,j],dims=1)' .- lambdaH *hplm[:,j]) < epstest
+                @test sum(abs2,lambdaJ * sum(Jplm[:,:,i,j],dims=2)  .- lambdaH *hplm[:,i]) < epstest
+            end
+        end
+        # sum_a h_i(a) = 0
+        for i in 1:N
+            @test abs(sum(hplm[:,i])) < epstest
+        end
+
+    end
     nothing
 end
-for tf in (true, false) # asymmetric (true) and symmetric (false    
-    testDCA(4,2,lambdaJ=1e-5,epsconv=1e-30,asym=tf,verbose=true)
-    Base.GC.gc() # strange gc needed for SharedArrays ????
-    testDCA(6,2,lambdaJ=1e-5,epsconv=1e-30,asym=tf,verbose=true)
-    Base.GC.gc()
-    testDCA(4,3,lambdaJ=1e-6,epsconv=1e-30,asym=tf,verbose=true)
-    Base.GC.gc()
+for tf in (true, false) # asymmetric (true) and symmetric (false
+    lambdaJ =  tf ? 1e-5 : 0.0
+    testDCA(4,2,lambdaJ=lambdaJ,epsconv=1e-30,asym=tf,verbose=true)
+    testDCA(6,2,lambdaJ=lambdaJ,epsconv=1e-30,asym=tf,verbose=true)
+    testDCA(4,3,lambdaJ=lambdaJ,epsconv=1e-30,asym=tf,verbose=true)
 end
+
+testDCA(6,2,lambdaJ=0.01,epsconv=0.03,asym=false,verbose=true)
+
+
 printstyled("All TestDCA passed!\n",color=:light_green,bold=true)
 end
