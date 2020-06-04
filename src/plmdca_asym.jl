@@ -33,7 +33,7 @@ end
 plmdca(Z,W;kwds...) = plmdca_asym(Z,W;kwds...)
 
 function plmdca_asym(filename::String;
-                theta::Union{Symbol,Integer}=:auto,
+                theta::Union{Symbol,Real}=:auto,
                 max_gap_fraction::Real=0.9,
                 remove_dups::Bool=true,
                 kwds...)
