@@ -62,6 +62,9 @@ function MinimizePLSym(alg::PlmAlg, var::PlmVar)
     batchidx = myrange(Z)
     opt = Opt(alg.method, length(x0))
     ftol_abs!(opt, alg.epsconv)
+    xtol_rel!(opt, alg.epsconv)
+    xtol_abs!(opt, alg.epsconv)
+    ftol_rel!(opt, alg.epsconv)
     maxeval!(opt, alg.maxit)
     min_objective!(opt, (x,g)->like_grad!(g,x,var,batchidx,alg.verbose))
     elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
@@ -161,37 +164,44 @@ function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::AbstractVector, Z::A
     vecene = zeros(Float64,q)
     expvecenesunorm = zeros(Float64,q)
     pseudolike = 0.0
-    offset = mygetindex(N-1, N, q, q, N, q, q2)
+    offset = LL-N*q
 
-    @inbounds for site=1:N    # site < i
+
+    @inbounds @simd for site=1:N    # site < i
+
         fillvecenesym!(vecene, vecJ, Z, site, q,N)
-        norm = sumexp(vecene)
-        expvecenesunorm .= exp.(vecene .- log(norm))
-        pseudolike -= Wa * ( vecene[Z[site]] - log(norm) )
-		@simd for i = 1:(site-1)
-             for s = 1:q
+        lnorm = logsumexp(vecene) #lnorm = log(sumexp(vecene))
+	    expvecenesumnorm = @. exp(vecene - lnorm) #expvecenesunorm = exp.(vecene .- lnorm)
+	    pseudolike -= W[m] * (vecene[Z[site,m]] - lnorm)
+        #norm = sumexp(vecene)
+        #expvecenesunorm .= exp.(vecene .- log(norm))
+        #pseudolike -= Wa * ( vecene[Z[site]] - log(norm) )
+		@avx for i = 1:(site-1)
+            for s = 1:q
                 grad[ mygetindex(i, site, Z[i], s, N, q, q2) ] += 0.5 * Wa * expvecenesunorm[s]
             end
             grad[ mygetindex(i, site , Z[i], Z[site],  N,q,q2)] -= 0.5 * Wa
         end
-		@simd for i = (site+1):N
-             for s = 1:q
+		@avx for i = (site+1):N
+            for s = 1:q
                 grad[ mygetindex(site, i , s,  Z[i], N,q,q2) ] += 0.5 * Wa * expvecenesunorm[s]
             end
             grad[ mygetindex(site, i , Z[site], Z[i], N,q,q2)] -= 0.5* Wa
         end
         @simd for s = 1:q
-            grad[ offset + s ] += Wa *  expvecenesunorm[s]
+            grad[ offset + (site-1)*q +  s ] += Wa *  expvecenesunorm[s]
         end
-		grad[ offset + Z[site] ] -= Wa
- 		offset += q
+		grad[ offset + (site-1)*q +  Z[site] ] -= Wa
+ 
     end
     return pseudolike
 end
 
 
 function fillvecenesym!(vecene::AbstractArray, vecJ::AbstractVector, Z::AbstractArray{Int64,1}, site::Int, q::Int ,N::Int)
+    
     q2 = q*q
+    LL=length(vecJ)
 
     @inbounds begin
         @simd for l = 1:q
@@ -205,9 +215,9 @@ function fillvecenesym!(vecene::AbstractArray, vecJ::AbstractVector, Z::Abstract
                 scra += vecJ[ mygetindex(site, i, l, Z[i], N, q, q2)]
             end # End sum_i \neq site J
            	#scra *= 0.5
-            offset = mygetindex(N-1, N, q, q, N, q, q2)  + ( site - 1) * q  # last J element + (site-1)*q
+            #offset = mygetindex(N-1, N, q, q, N, q, q2)  + ( site - 1) * q  # last J element + (site-1)*q
 
-            scra += vecJ[offset + l] # sum H
+            scra += vecJ[LL + ( site - 1 - N ) * q + l] # sum H
             vecene[l] = scra
         end
     end
@@ -215,9 +225,9 @@ end
 
 
 @inline function mygetindex( i::Int, j::Int, coli::Int, colj::Int, N::Int, q::Int, q2::Int)
-    offset_i = ( (i-1) * N  - ( (i * ( i -1 ) ) >> 1 ) ) * q2 # (i-1) N q2 + i (i-1) q2 / 2
-    offset_j = (j - i - 1 ) * q2
-    return offset_i + offset_j + coli + q * (colj - 1)
+    offset_i = ( (i-1) * N  - ( (i * ( i -1 ) ) >> 1 ) )  # (i-1) N q2 + i (i-1) q2 / 2
+    offset_j = (j - i - 1 ) 
+    return ( offset_i + offset_j ) * q2 + coli + q * (colj - 1)
 end
 
 
