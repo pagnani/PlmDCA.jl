@@ -3,4 +3,4 @@
 test/*~
 src/*~
 .vscode/*
-Manifest.toml
+#Manifest.toml  to be removed when GaussDCA will be intsalled
