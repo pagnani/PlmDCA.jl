@@ -124,19 +124,22 @@ function PLsiteAndGrad!(x::Vector{Float64}, grad::Vector{Float64}, site::Int, pl
 	    lnorm = logsumexp(vecene)
 	    expvecenesumnorm .= @. exp(vecene - lnorm) 
 	    pseudolike -= W[m] * (vecene[ zsm ] - lnorm)
-	    @avx for i = 1:site - 1
+        #@avx for i = 1:site - 1
+        @simd for i = 1:site - 1
 	        for s = 1:q
 	            grad[ izm[i] + s ] += W[m] * expvecenesumnorm[s]
 	        end
 	        grad[ izm[i] + zsm ] -= W[m]
 	    end
-        @avx for i = site + 1:N
+        #@avx for i = site + 1:N
+        @simd for i = site + 1:N
 	        for s = 1:q
 	            grad[ izm[i] - q2 + s ] += W[m] *  expvecenesumnorm[s]
 	        end
 	        grad[ izm[i] - q2 + zsm ] -= W[m]
 	    end
-	    @avx for s = 1:q
+        #@avx for s = 1:q
+        @simd for s = 1:q
 	        grad[ (N - 1) * q2 + s ] += W[m] * expvecenesumnorm[s]
 	    end
 		grad[ (N - 1) * q2 + zsm ] -= W[m]
@@ -152,11 +155,13 @@ function fillvecene!(vecene::Vector{Float64}, x::Vector{Float64}, site::Int, Idx
 	q2 = q * q
     @inbounds for l = 1:q
         scra::Float64 = 0.0
-        @avx for i = 1:site - 1 # Begin sum_i \neq site J
+        #@avx for i = 1:site - 1 # Begin sum_i \neq site J
+        @simd for i = 1:site - 1 # Begin sum_i \neq site J
             scra += x[IdxSeq[i] + l]
         end
         # skipping sum over residue site
-    	@avx for i = site + 1:N
+        #@avx for i = site + 1:N
+        @simd for i = site + 1:N
             scra +=  x[IdxSeq[i] - q2 + l]
         end # End sum_i \neq site J
         scra +=  x[(N - 1) * q2 + l] # sum H
@@ -182,13 +187,15 @@ function L2norm_asym(vec::Array{Float64,1}, plmvar::PlmVar)
     LL = length(vec)
 
     mysum1 = 0.0
-    @inbounds @avx for i = 1:(LL - q)
+    #@inbounds @avx for i = 1:(LL - q)
+    @inbounds @simd for i = 1:(LL - q)
         mysum1 += vec[i] * vec[i]
     end
     mysum1 *= lambdaJ
 
     mysum2 = 0.0
-    @inbounds @avx for i = (LL - q + 1):LL
+    #@inbounds @avx for i = (LL - q + 1):LL
+    @inbounds @simd for i = (LL - q + 1):LL
         mysum2 += vec[i] * vec[i]
     end
     mysum2 *= 2lambdaH
@@ -213,7 +220,7 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
             l = l + 1
         end
     end
-    
+
     hplm = fill(0.0, q, N)
     for i in 1:N
         hplm[:,i] .= Jmat[end - q + 1:end,i]
