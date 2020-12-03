@@ -2,3 +2,5 @@
 .*.swp
 test/*~
 src/*~
+.vscode/*
+#Manifest.toml  to be removed when GaussDCA will be intsalled

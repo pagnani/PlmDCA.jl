@@ -62,6 +62,9 @@ function MinimizePLSym(alg::PlmAlg, var::PlmVar)
     batchidx = myrange(Z)
     opt = Opt(alg.method, length(x0))
     ftol_abs!(opt, alg.epsconv)
+    ftol_rel!(opt, alg.epsconv)
+    xtol_rel!(opt, alg.epsconv)
+    xtol_abs!(opt, alg.epsconv)
     maxeval!(opt, alg.maxit)
     min_objective!(opt, (x,g)->like_grad!(g,x,var,batchidx,alg.verbose))
     elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
@@ -157,6 +160,7 @@ function plm_site_grad(vecJ::AbstractVector, plmvar::PlmVar,chunk)
     return pseudolike,grad
 end
 
+
 function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::AbstractVector, Z::AbstractArray{Int,1}, Wa::Float64, N::Int, q::Int, q2::Int)
     vecene = zeros(Float64,q)
     expvecenesunorm = zeros(Float64,q)
@@ -165,7 +169,8 @@ function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::AbstractVector, Z::A
 
     @inbounds for site=1:N    # site < i
         fillvecenesym!(vecene, vecJ, Z, site, q,N)
-        norm = sumexp(vecene)
+
+  	    norm = sumexp(vecene)
         expvecenesunorm .= exp.(vecene .- log(norm))
         pseudolike -= Wa * ( vecene[Z[site]] - log(norm) )
 		@simd for i = 1:(site-1)
@@ -191,7 +196,9 @@ end
 
 
 function fillvecenesym!(vecene::AbstractArray, vecJ::AbstractVector, Z::AbstractArray{Int64,1}, site::Int, q::Int ,N::Int)
+    
     q2 = q*q
+    LL=length(vecJ)
 
     @inbounds begin
         @simd for l = 1:q
@@ -205,19 +212,20 @@ function fillvecenesym!(vecene::AbstractArray, vecJ::AbstractVector, Z::Abstract
                 scra += vecJ[ mygetindex(site, i, l, Z[i], N, q, q2)]
             end # End sum_i \neq site J
            	#scra *= 0.5
-            offset = mygetindex(N-1, N, q, q, N, q, q2)  + ( site - 1) * q  # last J element + (site-1)*q
+            #offset = mygetindex(N-1, N, q, q, N, q, q2)  + ( site - 1) * q  # last J element + (site-1)*q
 
-            scra += vecJ[offset + l] # sum H
+            scra += vecJ[LL + ( site - 1 - N ) * q + l] # sum H
             vecene[l] = scra
         end
     end
-end
+end 
+
 
 
 @inline function mygetindex( i::Int, j::Int, coli::Int, colj::Int, N::Int, q::Int, q2::Int)
-    offset_i = ( (i-1) * N  - ( (i * ( i -1 ) ) >> 1 ) ) * q2 # (i-1) N q2 + i (i-1) q2 / 2
-    offset_j = (j - i - 1 ) * q2
-    return offset_i + offset_j + coli + q * (colj - 1)
+    offset_i = ( (i-1) * N  - ( (i * ( i -1 ) ) >> 1 ) )  # (i-1) N q2 + i (i-1) q2 / 2
+    offset_j = (j - i - 1 ) 
+    return ( offset_i + offset_j ) * q2 + coli + q * (colj - 1)
 end
 
 
