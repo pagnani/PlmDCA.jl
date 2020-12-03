@@ -25,9 +25,8 @@ The code now requires at least Julia version 1.0 or later.
 Install
 -------
 
-To install the package under version >= 1.0 please use the new package manager (it can be activated from the REPL using the key `]`). Once in the package manager install the two packages in the following order:
+To install just use the package manager and do a
 ```
-(v1.?) pkg> add https://github.com/pagnani/PottsGauge
 (v1.?) pkg> add https://github.com/pagnani/PlmDCA
 ```
 
