@@ -29,20 +29,19 @@ struct PlmVar
         sW = SharedArray{Float64}(size(W))
         sW[:] = W
  
-        IdxZ = Array{Int64}(undef, N, M)
+        IdxZ = Array{Int}(undef, N, M)
         q2=q*q
         for i in 1:M
             for j in 1:N
                 IdxZ[j,i] = (j-1) * q2 + q * (Z[j,i] - 1)
             end
         end
-
         sIdxZ = SharedArray{Int}(size(IdxZ))
         sIdxZ[:] = IdxZ
-
         new(N,M,q,q2,lambdaJ, lambdaH, sZ, sW, sIdxZ)
     end
 end
+
 
 struct DecVar{N} 
     fracdec::Float64
