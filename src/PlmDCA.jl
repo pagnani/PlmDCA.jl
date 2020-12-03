@@ -1,7 +1,7 @@
 module PlmDCA
-using GaussDCA,SharedArrays,Distributed,Printf, LinearAlgebra, Statistics
-
+using SharedArrays,Distributed,Printf, LinearAlgebra, Statistics
 using NLopt
+using GaussDCA
 
 export PlmOut, plmdca, plmdca_asym, plmdca_sym, plmdca_asym
 
