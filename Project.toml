@@ -1,7 +1,7 @@
 name = "PlmDCA"
 uuid = "06784e46-84fc-5582-b8de-0e984192b79e"
 author = ["Andrea Pagnani <andrea.pagnani@gmail.com>"]
-version = "0.2.0"
+version = "0.3.0"
 
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
