@@ -2,6 +2,7 @@ module PlmDCA
 using SharedArrays,Distributed,Printf, LinearAlgebra, Statistics
 using NLopt
 using GaussDCA
+using LoopVectorization
 
 export PlmOut, plmdca, plmdca_asym, plmdca_sym, plmdca_asym
 
