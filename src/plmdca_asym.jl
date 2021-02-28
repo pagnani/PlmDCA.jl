@@ -237,6 +237,6 @@ function ComputeScore(Jmat::Array{Float64,2}, var::PlmVar, min_separation::Int)
     Jtensor = (Jtensor1 + Jtensor2) / 2
 
     FN = compute_APC(Jtensor, N, q)
-    score = GaussDCA.compute_ranking(FN, min_separation)
+    score = compute_ranking(FN, min_separation)
     return score, FN, Jplm, hplm
 end
