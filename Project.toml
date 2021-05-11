@@ -1,7 +1,7 @@
 name = "PlmDCA"
 uuid = "06784e46-84fc-5582-b8de-0e984192b79e"
 author = ["Andrea Pagnani <andrea.pagnani@gmail.com>"]
-version = "0.4.0"
+version = "0.4.1"
 
 [deps]
 DCAUtils = "e41cd558-3099-4f6e-a65d-5336857e40aa"
@@ -15,6 +15,7 @@ Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 julia = "≥ 1.5.0"
+LoopVectorization = "11.2"
 
 [extras]
 PottsGauge = "3bb3bcb6-c561-57d3-939c-408d524c1e5b"
