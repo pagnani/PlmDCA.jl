@@ -1,11 +1,11 @@
 function optimfunwrapper(x::Vector, g::Vector, site, var)
     g === nothing && (g = zeros(Float64, length(x)))
-    return PLsiteAndGrad!(x, g, site,  var)
+    return pl_site_grad!(x, g, site,  var)
 end
 
 function optimfunwrapper(x::Vector, g::Vector, var)
     g === nothing && (g = zeros(Float64, length(x)))
-    return PLsiteAndGradSym!(x, g, var)
+    return pl_site_grad_sym!(x, g, var)
 end
 
 function inflate_matrix(J::Array{Float64,3},N)
@@ -48,7 +48,7 @@ function compute_APC(J::Array{Float64,4},N,q)
 end
 
 
-function ReadFasta(filename::AbstractString,max_gap_fraction::Real, theta::Any, remove_dups::Bool)
+function read_fasta(filename::String,max_gap_fraction::Real, theta::Any, remove_dups::Bool)
 
     Z = read_fasta_alignment(filename, max_gap_fraction)
     if remove_dups
@@ -67,7 +67,7 @@ end
 
 function compute_ranking(S::Matrix{Float64}, min_separation::Int = 5)
     N = size(S, 1)
-    R = Array{Tuple{Int,Int,Float64}}(undef, div((N-min_separation)*(N-min_separation+1), 2))
+    R = Array{Tuple{Int,Int,Float64},1}(undef, div((N-min_separation)*(N-min_separation+1), 2))
     counter = 0
     for i = 1:N-min_separation, j = i+min_separation:N
         counter += 1
