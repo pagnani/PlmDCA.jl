@@ -23,19 +23,10 @@ function plmdca_sym(Z::Array{T,2},W::Vector{Float64};
     q = Int(maximum(Z))
 
     plmalg = PlmAlg(method,verbose, epsconv ,maxit)
-    plmvar = PlmVar(N,M,q,q*q,lambdaJ,lambdaH,Z,W)
+    plmvar = PlmVar(N,M,q,lambdaJ,lambdaH,Z,W)
 
-    Jmat,pseudolike = if decimation == false
-        MinimizePLSym(plmalg,plmvar)
-    else
-        if blockdecimate
-            decvar = DecVar{1}(fracdec, fracmax, blockdecimate, ones(Bool, binomial(N,2)))
-        else
-            decvar = DecVar{1}(fracdec, fracmax, blockdecimate, ones(Bool, binomial(N,2)*q*q+N*q))
-        end
-        DecimateSym!(plmvar, plmalg, decvar)
-    end
-    score, Jtens, htens = ComputeScoreSym(Jmat, plmvar, min_separation)
+    Jmat,pseudolike = minimize_pl_sym(plmalg,plmvar)
+    score, Jtens, htens = compute_score_sym(Jmat, plmvar, min_separation)
 
     return PlmOut(pseudolike, Jtens, htens, score)
 end
@@ -45,11 +36,11 @@ function plmdca_sym(filename::String;
                 max_gap_fraction::Real=0.9,
                 remove_dups::Bool=true,
                 kwds...)
-    W,Z,N,M,q = ReadFasta(filename,max_gap_fraction, theta, remove_dups)
+    W,Z,N,M,q =read_fasta(filename,max_gap_fraction, theta, remove_dups)
     plmdca_sym(Z,W; kwds...)
 end
 
-function MinimizePLSym(alg::PlmAlg, var::PlmVar)
+function minimize_pl_sym(alg::PlmAlg, var::PlmVar)
 
     N  = var.N
     q  = var.q
@@ -70,12 +61,11 @@ function MinimizePLSym(alg::PlmAlg, var::PlmVar)
     elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
     alg.verbose && @printf("pl = %.4f\t time = %.4f\t exit status = ", minf, elapstime)
     alg.verbose && println(ret)
-
     return minx, minf
 end
 
-function myrange(q::DenseMatrix)
-    nchunks = nprocs()
+function myrange(q::Matrix)
+    nchunks = Threads.nthreads()
     nchunks > 2 || (return [1:size(q,2),])
     splits = [round(Int, s) for s in range(0, stop=size(q,2), length=nchunks)]
     [splits[idx]+1:splits[idx+1] for idx in 1:nchunks-1]
@@ -84,33 +74,26 @@ end
 reduce_res(x::Tuple) = x
 (reduce_res(x::Vector{T}) where T<:Tuple) = broadcast(+,x...)
 
-
-function L2norm_sym(vec::AbstractVector, var::PlmVar)
-
+function l2norm_sym(vec::Vector, var::PlmVar)
     q = var.q
     N = var.N
     lambdaJ = var.lambdaJ
     lambdaH = var.lambdaH
-
     LL = length(vec)
-
-
     mysum1 = 0.0
     @inbounds @simd for i in 1:(LL-N*q)
         mysum1 += vec[i] * vec[i]
     end
     mysum1 *= lambdaJ
-
     mysum2 = 0.0
     @inbounds @simd for i in (LL - N*q + 1):LL
         mysum2 += vec[i] * vec[i]
     end
     mysum2 *= 2lambdaH
-# 	mysum2 *= lambdaH
     return mysum1+mysum2
 end
 
-function add_l2grad!(grad::Vector,vecJ::AbstractVector,plmvar::PlmVar)
+function add_l2grad!(grad::Vector,vecJ::Vector,plmvar::PlmVar)
     N = plmvar.N
     LL = length(grad)
     q = plmvar.q
@@ -122,46 +105,42 @@ function add_l2grad!(grad::Vector,vecJ::AbstractVector,plmvar::PlmVar)
         end
         @simd for i in (LL-N*q + 1):LL
             grad[i] += 2.0 * vecJ[i] * lambdaH
-#			grad[i] += 2.0 * vecJ[i] * lambdaH
         end
     end
     nothing
 end
-function like_grad!(g::Vector,vecJ::AbstractVector,plmvar::PlmVar,vec_chunk,verbose)
 
+function like_grad!(g::Vector, vecJ::Vector, plmvar::PlmVar, vec_chunk, verbose)
     g === nothing && (g = zero(vecJ))
-    sJ = SharedArray(vecJ)
-    res = @distributed vcat for chunk in vec_chunk
-        pl_chunk, gr_chunk = plm_site_grad(sJ, plmvar, chunk)
+    nchunks = length(vec_chunk)
+    res = Vector{Tuple{Float64,Vector{Float64}}}(undef, nchunks)
+    Threads.@threads for id in 1:nchunks
+        res[id] = plm_site_grad(vecJ, plmvar, vec_chunk[id])
     end
-    pl,gr = reduce_res(res)
-    pl += L2norm_sym(vecJ, plmvar)
+    pl, gr = reduce_res(res)
+    pl += l2norm_sym(vecJ, plmvar)
     verbose && println("pl = $pl")
-    add_l2grad!(gr,vecJ, plmvar)
+    add_l2grad!(gr, vecJ, plmvar)
     g .= gr
     return pl
 end
 
-function plm_site_grad(vecJ::AbstractVector, plmvar::PlmVar,chunk)
 
-    LL = length(vecJ)
+function plm_site_grad(vecJ::Vector, plmvar::PlmVar,chunk)
     q2 = plmvar.q2
     q = plmvar.q
     N = plmvar.N
-    M = plmvar.M
     Z = plmvar.Z
     W = plmvar.W
     grad = zero(vecJ)
     pseudolike = 0.0
     for a in chunk
-        pseudolike += ComputePatternPLSym!(grad, vecJ, Z[:,a],W[a], N, q, q2)
+        pseudolike += compute_pattern_plsym!(grad, vecJ, Z[:,a],W[a], N, q, q2)
     end
-
     return pseudolike,grad
 end
 
-
-function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::AbstractVector, Z::AbstractArray{Int,1}, Wa::Float64, N::Int, q::Int, q2::Int)
+function compute_pattern_plsym!(grad::Array{Float64,1}, vecJ::AbstractVector, Z::AbstractArray{Int,1}, Wa::Float64, N::Int, q::Int, q2::Int)
     vecene = zeros(Float64,q)
     expvecenesunorm = zeros(Float64,q)
     pseudolike = 0.0
@@ -170,10 +149,10 @@ function ComputePatternPLSym!(grad::Array{Float64,1}, vecJ::AbstractVector, Z::A
     @inbounds for site=1:N    # site < i
         fillvecenesym!(vecene, vecJ, Z, site, q,N)
 
-  	    norm = sumexp(vecene)
+        norm = sumexp(vecene)
         expvecenesunorm .= exp.(vecene .- log(norm))
         pseudolike -= Wa * ( vecene[Z[site]] - log(norm) )
-		@simd for i = 1:(site-1)
+        @simd for i = 1:(site-1)
              for s = 1:q
                 grad[ mygetindex(i, site, Z[i], s, N, q, q2) ] += 0.5 * Wa * expvecenesunorm[s]
             end
@@ -204,11 +183,10 @@ function fillvecenesym!(vecene::AbstractArray, vecJ::AbstractVector, Z::Abstract
         @simd for l = 1:q
             offset::Int = 0
             scra::Float64 = 0.0
-
             for i=1:site-1
                 scra += vecJ[ mygetindex(i, site, Z[i], l,  N, q, q2)]
             end
-    	    for i = site+1:N
+            for i = site+1:N
                 scra += vecJ[ mygetindex(site, i, l, Z[i], N, q, q2)]
             end # End sum_i \neq site J
            	#scra *= 0.5
@@ -220,17 +198,13 @@ function fillvecenesym!(vecene::AbstractArray, vecJ::AbstractVector, Z::Abstract
     end
 end 
 
-
-
 @inline function mygetindex( i::Int, j::Int, coli::Int, colj::Int, N::Int, q::Int, q2::Int)
     offset_i = ( (i-1) * N  - ( (i * ( i -1 ) ) >> 1 ) )  # (i-1) N q2 + i (i-1) q2 / 2
     offset_j = (j - i - 1 ) 
     return ( offset_i + offset_j ) * q2 + coli + q * (colj - 1)
 end
 
-
-
-function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::Int)
+function compute_score_sym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::Int)
 
     LL = length(Jvec)
     N=var.N
@@ -245,12 +219,10 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
 
     for l=1:Nc2
         J[:,:,l] = Jtens[:,:,l] -
-					repeat(mean(Jtens[:,:,l],dims=1),q,1) -
-					repeat(mean(Jtens[:,:,l],dims=2),1,q) .+
-					mean(Jtens[:,:,l])
+            repeat(mean(Jtens[:,:,l],dims=1),q,1) -
+            repeat(mean(Jtens[:,:,l],dims=2),1,q) .+
+		    mean(Jtens[:,:,l])
     end
-
-
     FN = zeros(Float64, N,N)
     l = 1
     for i=1:N-1
@@ -262,6 +234,5 @@ function ComputeScoreSym(Jvec::Array{Float64,1}, var::PlmVar, min_separation::In
     end
     FN = correct_APC(FN)
     score = compute_ranking(FN,min_separation)
-	GC.gc() # something wrong with SharedArray
     return score, inflate_matrix(Jtens,N),htens
 end

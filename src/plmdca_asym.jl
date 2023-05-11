@@ -60,33 +60,6 @@ function minimize_pl_asym(alg::PlmAlg, var::PlmVar)
     return Jmat, vecps
 end
 
-# function ComputeUL(alg::PlmAlg, var::PlmVar, site::Int, LL::Int)
-
-#     N  = var.N
-#     q2 = var.q2
-#     lb = -Inf * ones(Float64, LL)
-#     ub =  Inf * ones(Float64, LL)
-#     tiny::Float64 = 1.0e-6
-#     offset::Int = 0
-
-#     for i = 1:site - 1
-#         for s = 1:q2
-#             lb[offset + s] = -tiny
-#             ub[offset + s] =  tiny
-#         end
-#     end
-#     offset += q2
-
-#     for i = site + 1:N
-#         for s = 1:q2
-#             lb[offset + s] = -tiny
-#             ub[offset + s] =  tiny
-#         end
-#         offset += q2
-#     end
-#     return lb, ub
-# end
-
 function pl_site_grad!(x::Vector{Float64}, grad::Vector{Float64}, site::Int, plmvar::PlmVar)
 
     LL = length(x)
