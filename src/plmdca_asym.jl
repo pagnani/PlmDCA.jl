@@ -41,6 +41,7 @@ function minimize_pl_asym(alg::PlmAlg, var::PlmVar)
 
     LL = (var.N - 1) * var.q2 + var.q
     x0 = zeros(Float64, LL)
+    g = zeros(Float64, LL)
     vecps = Vector{Float64}(undef, var.N)
     Jmat = zeros(LL,var.N)
     Threads.@threads for site = 1:var.N
@@ -51,7 +52,7 @@ function minimize_pl_asym(alg::PlmAlg, var::PlmVar)
         ftol_rel!(opt, alg.epsconv)
         maxeval!(opt, alg.maxit)
         min_objective!(opt, (x, g) -> optimfunwrapper(x, g, site, var))
-        elapstime = @elapsed  (minf, minx, ret) = optimize(opt, x0)
+        elapstime = @elapsed (minf, minx, ret) = optimize(opt, x0)
         alg.verbose && @printf("site = %d\t pl = %.4f\t time = %.4f\t", site, minf, elapstime)
         alg.verbose && println("exit status = $ret")
         vecps[site] = minf
@@ -61,7 +62,6 @@ function minimize_pl_asym(alg::PlmAlg, var::PlmVar)
 end
 
 function pl_site_grad!(x::Vector{Float64}, grad::Vector{Float64}, site::Int, plmvar::PlmVar)
-
     LL = length(x)
     q2 = plmvar.q2
     q = plmvar.q
@@ -80,26 +80,26 @@ function pl_site_grad!(x::Vector{Float64}, grad::Vector{Float64}, site::Int, plm
     vecene = zeros(Float64, q)
     lnorm = 0.0
     expvecenesumnorm = zeros(Float64, q)
-    @inbounds for m = 1:M
+    @inbounds for m in 1:M
         izm = view(IdxZ, :, m)
         zsm = Z[site,m]
         fillvecene!(vecene, x, site, izm, q, N)
         lnorm = logsumexp(vecene)
         expvecenesumnorm .= @. exp(vecene - lnorm)
         pseudolike -= W[m] * (vecene[ zsm ] - lnorm)
-        @avx for i in 1:site - 1
+        @turbo for i in 1:site - 1
         for s = 1:q
                 grad[ izm[i] + s ] += W[m] * expvecenesumnorm[s]
             end
             grad[ izm[i] + zsm ] -= W[m]
         end
-        @avx for i = site + 1:N
+        @turbo for i = site + 1:N
             for s = 1:q
                 grad[ izm[i] - q2 + s ] += W[m] *  expvecenesumnorm[s]
             end
             grad[ izm[i] - q2 + zsm ] -= W[m]
         end
-        @avx for s = 1:q
+        @turbo for s = 1:q
             grad[ (N - 1) * q2 + s ] += W[m] * expvecenesumnorm[s]
         end
         grad[ (N - 1) * q2 + zsm ] -= W[m]
@@ -114,11 +114,11 @@ function fillvecene!(vecene::Vector{Float64}, x::Vector{Float64}, site::Int, Idx
 	q2 = q * q
     @inbounds for l in 1:q
         scra::Float64 = 0.0
-        @avx for i = 1:site - 1 # Begin sum_i \neq site J
+        @turbo for i = 1:site - 1 # Begin sum_i \neq site J
             scra += x[IdxSeq[i] + l]
         end
         # skipping sum over residue site
-        @avx for i = site + 1:N
+        @turbo for i = site + 1:N
             scra += x[IdxSeq[i] - q2 + l]
         end # End sum_i \neq site J
         scra +=  x[(N - 1) * q2 + l] # sum H
@@ -142,12 +142,12 @@ function l2norm_asym(vec::Array{Float64,1}, plmvar::PlmVar)
 
     LL = length(vec)
     mysum1 = 0.0
-    @inbounds @avx for i in 1:(LL - q)
+    @inbounds @turbo for i in 1:(LL - q)
         mysum1 += vec[i] * vec[i]
     end
     mysum1 *= lambdaJ
     mysum2 = 0.0
-    @inbounds @avx for i in (LL - q + 1):LL
+    @inbounds @turbo for i in (LL - q + 1):LL
         mysum2 += vec[i] * vec[i]
     end
     mysum2 *= 2lambdaH
