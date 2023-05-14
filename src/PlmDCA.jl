@@ -13,5 +13,6 @@ include("utils.jl")
 include("plmdca_asym.jl")
 include("plmdca_sym.jl")
 include("mi.jl")
+include("precompile.jl")
 #include("legacy/decimation_sym.jl")
 end
