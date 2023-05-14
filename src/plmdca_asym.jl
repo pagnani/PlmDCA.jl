@@ -114,13 +114,17 @@ function fillvecene!(vecene::Vector{Float64}, x::Vector{Float64}, site::Int, Idx
 	q2 = q * q
     @inbounds for l in 1:q
         scra::Float64 = 0.0
-        @turbo for i = 1:site - 1 # Begin sum_i \neq site J
-            scra += x[IdxSeq[i] + l]
+        if site > 1 # turbo does not like iterating over an empty iterator. 
+            @turbo for i = 1:site - 1 # Begin sum_i \neq site J
+                scra += x[IdxSeq[i] + l]
+            end
         end
         # skipping sum over residue site
-        @turbo for i = site + 1:N
-            scra += x[IdxSeq[i] - q2 + l]
-        end # End sum_i \neq site J
+        if site < N # turbo does not like iterating over an empty iterator
+            @turbo for i = site + 1:N
+                scra += x[IdxSeq[i] - q2 + l]
+            end # End sum_i \neq site J
+        end
         scra +=  x[(N - 1) * q2 + l] # sum H
         vecene[l] = scra
     end

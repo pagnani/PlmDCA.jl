@@ -1,12 +1,15 @@
-import Base:precompile
+using PrecompileTools
 
-precompile(read_fasta, (String, Float64, Symbol, Bool))
-precompile(compute_weights,(Matrix{Int8},Int,Symbol))
-precompile(read_fasta_alignment,(AbstractString,Float64))
-precompile(plmdca_asym,(Array{Float64,2},Vector{Float64}))
-precompile(minimize_pl_asym,(PlmAlg,PlmVar))
-precompile(pl_site_grad!,(Vector{Float64},Vector{Float64}))
-precompile(fillvecene!, (Vector{Float64}, Vector{Float64}, Int, AbstractArray{Int,1}, Int, Int))
-precompile(logsumexp,(Vector{Float64},))
-precompile(l2norm_asym,(Array{Float64,1}, PlmVar))
-precompile(compute_score,(Array{Float64,2}, PlmVar, Int))
+@setup_workload begin
+    N = 10;
+    M = 10
+    Z = rand(1:21,N,M)
+    W = rand(M)
+    W ./= sum(W)
+    @compile_workload begin
+        redirect_stdout(devnull) do
+            res1=plmdca_asym(Z,W)
+            res2=plmdca_sym(Z,W)
+        end
+    end
+end
