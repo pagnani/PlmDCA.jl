@@ -17,17 +17,20 @@ See the [Index](@ref index) for the complete list of documented functions and ty
 Protein families are given in form of multiple sequence alignments (MSA) $D = (a^m_i |i = 1,\dots,L;\,m = 1,\dots,M)$ of $M$ proteins of aligned length $L$. The entries $a^m_i$ equal either one of the standard 20 amino acids, or the alignment gap $–$. In total, we have $q = 21$ possible different symbols in D. The aim of unsupervised generative modeling is to earn a statistical model $P(a_1,\dots,a_L)$ of (aligned) full-length sequences, which faithfully reflects the variability found in $D$: sequences belonging to the protein family of interest should have comparably high probabilities, unrelated sequences very small probabilities.
 Here we propose a computationally efficient approach based on pseudo-likelihood maximization. 
 
-We start from the exact decomposition $P_i(a_i| a_{\setminus i})$
+We start from the exact decomposition $P_i(a_i| a_{\setminus i})$ where
+$a_{\setminus i} := {a_1,\dots,a_{i-1},a_{i+1},\dots,a_i$, i.e. all the sequence
+of amino acids but the one relative to residue $i$. 
 
 Here, we use the following parametrization:
 
-$P(a_i | a_1,\dots,a_{i-1}) = \frac{\exp \left\{ h_i(a_i) + \sum_{j=1}^{i-1} J_{i,j}(a_i,a_j)\right\} }{z_i(a_1,\dots,a_{i-1})}\,,$
+$P(a_i |a_{\setminus i}) = \frac{\exp \left\{ h_i(a_i) + \sum_{j\neq i}
+J_{i,j}(a_i,a_j)\right\} }{z_i(a_{\setminus i})}\,,$
 
 where:
 
-$z_i(a_1,\dots,a_{i-1})= \sum_{a=1}^{q} \exp \left\{ h_i(a) + \sum_{j=1}^{i-1} J_{i,j}(a,a_j)\right\} \,,$
+$z_i(a_{\setminus i})= \sum_{a=1}^{q} \exp \left\{ h_i(a) + \sum_{j=1}^{i-1} J_{i,j}(a,a_j)\right\} \,,$
 
-is a the normalization factor. In machine learning, this
+is the normalization factor. In machine learning, this
 parametrization is known as soft-max regression, the generalization of logistic regression to multi-class labels.
 
 # Usage
@@ -55,24 +58,32 @@ If you want to set permanently the number of threads to the desired value, you c
 
 ## Load PlmDCA package 
 
-The following cell loads the package `PlmDCA` (*Warning*: the first time it takes a while)
+The package is on the General Registry. It can be installed from the package
+manager by
 
-* The `mypkgdir` variable should be set to your `path/to/package` dir.
+pkg> add PlmDCA
 
-We will use the PF00014 protein family available in `data/` folder of the package/
+## Learn the parameters
 
-```
-mypkgdir = normpath(joinpath(pwd(),".."))
-datadir=joinpath(mypkgdir,"data") # put here your path
-using Pkg
-Pkg.activate(mypkgdir)
-using PlmDCA
-```
-## Learn the autoregressive parameters
+There are two different learning stragies: 
 
-As a preliminary step, we learn the field and the coupling parameters $h,J$ from the MSA. To do so we use the `plmdca` method that return the parameters stored in `res::PlmOut` in the cell below.
+* The asymmetric one invoked by the `plmdca_asym` method (the `plmdca` method
+  points to the asymmetric strategy)
 
-The keyword arguments for the `plmdca` method are (with their default value):
+* The symmetric strategy nvoked by the `plmdca_sym`. This method is slower and
+  typically less accurate.
+
+
+Both methods return the parameters  `res::PlmOut`, a `struct` containg:
+
+1. `Jtensor`: the 4 dimensional Array (q×q×L×L)  of the couplings in zero-sum gauge J[a,b,i,j]
+2. `Htensor`: the 2 dimensional Array (q×L) of the fields in zero-sum gauge h[a,i]
+3. `pslike`: a vector of length `L` containining the log-pseudolikelihoods
+4. `score`: a vector of ``(i,j,val)::Tuple{Int,Int,Float64}` containing the DCA
+   score `val` relative to the `i,j` pair in descending order.
+
+
+For both methods, the keyword arguments (with their default value) are:
 
 * `epsconv::Real=1.0e-5` (convergence parameter)
 
