@@ -10,6 +10,7 @@ using PrecompileTools
         redirect_stdout(devnull) do
             res1=plmdca_asym(Z,W)
             res2=plmdca_sym(Z,W)
+            res3=mutualinfo(Int8.(Z))
         end
     end
 end
