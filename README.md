@@ -8,7 +8,7 @@ PlmDCA
 
 Pseudo-likelihood maximization in [Julia](http://julialang.org). A
 complete description of the algorithm can be found at
-http://plmdca.csc.kth.se/. If you use this algorithm you should cite:
+http://plmdca.csc.kth.se/. If you use this algorithm, you should cite:
 
 1. M. Ekeberg, C. Lovkvist, Y. Lan, M. Weigt, E. Aurell, Improved
    contact prediction in proteins: Using pseudolikelihood to infer Potts
