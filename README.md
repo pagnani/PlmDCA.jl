@@ -80,8 +80,6 @@ accuracy and speed is achieved by the Low Storage BFGS method
 methods can be set changing the default optional argument
 (e.g. `method=:LD_SLSQP`).
 
-There are more optional arguments that can be set (to be documented...).
-
 Output
 ======
 The functions output a `type PlmOut` (say `X`) with 4 fields:
