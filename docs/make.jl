@@ -19,5 +19,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/pagnani/PlmDCA.jl.git",
+    repo="github.com/pagnani/PlmDCA.git",
 )
