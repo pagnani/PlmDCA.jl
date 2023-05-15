@@ -74,7 +74,7 @@ methods):
 :LD_TNEWTON_PRECOND_RESTART, :LD_TNEWTON, :LD_VAR2, :LD_VAR1
 ```
 
-After some experiments we found that the best compromise between
+After some experiments, we found that the best compromise between
 accuracy and speed is achieved by the Low Storage BFGS method
 `:LD_LBFGS`, which is the default method in the code. The other
 methods can be set changing the default optional argument
