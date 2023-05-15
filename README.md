@@ -29,10 +29,11 @@ The code now requires at least Julia version 1.5 or later.
 Install
 -------
 
-To install just use the package manager and do a
+To install locally.
 ```
 (v1.?) pkg> add https://github.com/pagnani/PlmDCA
 ```
+The package is now registered and should soon appear in the General Registry. 
 
 Overview
 --------
@@ -54,11 +55,6 @@ computationally-heavy functions can use multiple threads (start julia with
 the `-t` option or set the `JULIA_NUM_THREADS` environment variable). 
 For more information on how set correctly the number of threads, please
 refer to the online [Julia Documentation on Multi-Threading](https://docs.julialang.org/en/v1/manual/multi-threading/).
-
-The program (only in its symmetric version `plmdca_sym`) can be run on
-multiple cores previous ``addprocs(nprocs)`` where ``nprocs`` should
-be some integer number `np` lower or equal to your (physical) number
-of cores.
 
 The software provides two main functions `plmdca(filename::String,
 ...)` and `plmdca_sym(filename::String,...)` (resp. the asymmetric and
@@ -90,7 +86,6 @@ Output
 ======
 The functions output a `type PlmOut` (say `X`) with 4 fields:
 
-
 *  `X.Jtensor`: the coupling matrix `J[ri,rj,i,j]` a symmetrized
 `q x q x N x N` array, where `N` is the number of residues in the
 multiple sequence alignment, and `q` is the alphabet "size" (typically
@@ -104,9 +99,6 @@ Requirements
 
 * The minimal julia version for using this code is 1.3 (package version <= v0.2.0)
 
-* From package versions 0.3.0 on the minimal julia requirement is 1.5
+* From package versions 0.3.0 on the minimal julia requirement is 1.5 (although
+  we only test v1.6)
 
-Todos 
------ 
-
-A lot!
