@@ -11,7 +11,7 @@ complete description of the algorithm can be found at
 http://plmdca.csc.kth.se/. If you use this algorithm you should cite:
 
 1. M. Ekeberg, C. Lovkvist, Y. Lan, M. Weigt, E. Aurell, Improved
-   contact prediction in proteins: Using pseudolikelihoods to infer Potts
+   contact prediction in proteins: Using pseudolikelihood to infer Potts
    models, Phys. Rev. E 87, 012707 (2013)
 
 2. M. Ekeberg, T. Hartonen, E. Aurell, Fast pseudolikelihood
