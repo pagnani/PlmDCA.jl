@@ -99,6 +99,6 @@ Requirements
 
 * The minimal julia version for using this code is 1.3 (package version <= v0.2.0)
 
-* From package versions 0.3.0 on the minimal julia requirement is 1.5 (although
-  we only test v1.6)
+* From package versions 0.3.0 on the minimal `julia` requirement is 1.5 (although
+  the oldest version we test is v1.6)
 
