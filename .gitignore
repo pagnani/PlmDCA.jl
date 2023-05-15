@@ -1,6 +1,6 @@
-*~
-.*.swp
-test/*~
-src/*~
-.vscode/*
+.vscode
+*.jl.*.cov
+*.jl.cov
+*.jl.mem
+.DS_Store
 Manifest.toml

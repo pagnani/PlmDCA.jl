@@ -1,13 +1,17 @@
 PlmDCA
 ======
-[![Build Status](https://travis-ci.com/pagnani/PlmDCA.svg?branch=master)](https://travis-ci.com/pagnani/PlmDCA) [![Build status](https://ci.appveyor.com/api/projects/status/hnuowde2tpot8ni6/branch/master?svg=true)](https://ci.appveyor.com/project/pagnani/plmdca/branch/master) [![codecov](https://codecov.io/gh/pagnani/PlmDCA/branch/master/graph/badge.svg)](https://codecov.io/gh/pagnani/PlmDCA)
+[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://pagnani.github.io/PlmDCA.jl/stable)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://pagnani.github.io/PlmDCA.jl/dev)
+[![Build Status](https://github.com/pagnani/PlmDCA/workflows/CI/badge.svg)](https://github.com/pagnani/PlmDCA/actions) 
+[![Coverage](https://codecov.io/gh/pagnani/PlmDCA/branch/master/graph/badge.svg)](https://codecov.io/gh/pagnani/PlmDCA)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Pseudo-likelihood maximization in [Julia](http://julialang.org). A
 complete description of the algorithm can be found at
 http://plmdca.csc.kth.se/. If you use this algorithm you should cite:
 
 1. M. Ekeberg, C. Lovkvist, Y. Lan, M. Weigt, E. Aurell, Improved
-   contact prediction in proteins: Using pseudolikelihoods to infer Potts
+   contact prediction in proteins: Using pseudolikelihood to infer Potts
    models, Phys. Rev. E 87, 012707 (2013)
 
 2. M. Ekeberg, T. Hartonen, E. Aurell, Fast pseudolikelihood
@@ -25,10 +29,11 @@ The code now requires at least Julia version 1.5 or later.
 Install
 -------
 
-To install just use the package manager and do a
+To install locally.
 ```
 (v1.?) pkg> add https://github.com/pagnani/PlmDCA
 ```
+The package is now registered and should soon appear in the General Registry. 
 
 Overview
 --------
@@ -50,11 +55,6 @@ computationally-heavy functions can use multiple threads (start julia with
 the `-t` option or set the `JULIA_NUM_THREADS` environment variable). 
 For more information on how set correctly the number of threads, please
 refer to the online [Julia Documentation on Multi-Threading](https://docs.julialang.org/en/v1/manual/multi-threading/).
-
-The program (only in its symmetric version `plmdca_sym`) can be run on
-multiple cores previous ``addprocs(nprocs)`` where ``nprocs`` should
-be some integer number `np` lower or equal to your (physical) number
-of cores.
 
 The software provides two main functions `plmdca(filename::String,
 ...)` and `plmdca_sym(filename::String,...)` (resp. the asymmetric and
@@ -86,7 +86,6 @@ Output
 ======
 The functions output a `type PlmOut` (say `X`) with 4 fields:
 
-
 *  `X.Jtensor`: the coupling matrix `J[ri,rj,i,j]` a symmetrized
 `q x q x N x N` array, where `N` is the number of residues in the
 multiple sequence alignment, and `q` is the alphabet "size" (typically
@@ -100,9 +99,6 @@ Requirements
 
 * The minimal julia version for using this code is 1.3 (package version <= v0.2.0)
 
-* From package versions 0.3.0 on the minimal julia requirement is 1.5
+* From package versions 0.3.0 on the minimal `julia` requirement is 1.5 (although
+  the oldest version we test is v1.6)
 
-Todos 
------ 
-
-A lot!

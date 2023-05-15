@@ -2,7 +2,7 @@ module TestCorr
 using PlmDCA, Test
 
 function corrtests_simple()
-    W,Z,N,M,q = PlmDCA.ReadFasta("test.fasta",1.0, 0.0 , true)
+    W,Z,N,M,q = PlmDCA.read_fasta("test.fasta",1.0, 0.0 , true)
     @test q == 2
     @test N == 3
     @test M == 2
