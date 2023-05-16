@@ -1,9 +1,9 @@
 PlmDCA
 ======
 <!-- [![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://pagnani.github.io/PlmDCA/stable) --->
-[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://pagnani.github.io/PlmDCA/dev)
-[![Build Status](https://github.com/pagnani/PlmDCA/workflows/CI/badge.svg)](https://github.com/pagnani/PlmDCA/actions) 
-[![Coverage](https://codecov.io/gh/pagnani/PlmDCA/branch/master/graph/badge.svg)](https://codecov.io/gh/pagnani/PlmDCA)
+[![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://pagnani.github.io/PlmDCA.jl/dev)
+[![Build Status](https://github.com/pagnani/PlmDCA/workflows/CI/badge.svg)](https://github.com/pagnani/PlmDCA.jl/actions) 
+[![Coverage](https://codecov.io/gh/pagnani/PlmDCA/branch/master/graph/badge.svg)](https://codecov.io/gh/pagnani/PlmDCA.jl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Pseudo-likelihood maximization in [Julia](http://julialang.org). A
@@ -31,7 +31,7 @@ Install
 
 To install locally.
 ```
-(v1.?) pkg> add https://github.com/pagnani/PlmDCA
+(v1.?) pkg> add https://github.com/pagnani/PlmDCA.jl
 ```
 The package is now registered and should soon appear in the General Registry. 
 

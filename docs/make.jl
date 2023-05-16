@@ -10,7 +10,7 @@ makedocs(;
     sitename="PlmDCA",
     format=Documenter.HTML(;
         prettyurls=get(ENV, "CI", "false") == "true",
-        canonical="https://pagnani.github.io/PlmDCA",
+        canonical="https://pagnani.github.io/PlmDCA.jl",
         assets=String[],
     ),
     pages=[
@@ -19,5 +19,5 @@ makedocs(;
 )
 
 deploydocs(;
-    repo="github.com/pagnani/PlmDCA.git",
+    repo="github.com/pagnani/PlmDCA.jl.git",
 )
