@@ -17,7 +17,7 @@ DCAUtils = "1"
 LoopVectorization = "0.12"
 PrecompileTools = "1"
 NLopt = "0.6"
-julia = "≥ 1.5.0"
+julia = "1.6.0"
 
 [extras]
 PottsGauge = "3bb3bcb6-c561-57d3-939c-408d524c1e5b"
