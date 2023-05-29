@@ -19,8 +19,7 @@ Pseudo-likelihood maximization in [Julia](http://julialang.org). If you use this
    material)
 
 The present software is a Julia implementation of above mentioned
-papers, with no reference to the original MATLAB
-[software](http://plmdca.csc.kth.se) implementation.
+papers, with no reference to the original MATLAB implementation.
 
 The code requires Julia version 1.5 or later.
 
