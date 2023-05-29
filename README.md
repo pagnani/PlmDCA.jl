@@ -6,9 +6,7 @@ PlmDCA
 [![Coverage](https://codecov.io/gh/pagnani/PlmDCA/branch/master/graph/badge.svg)](https://codecov.io/gh/pagnani/PlmDCA.jl)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Pseudo-likelihood maximization in [Julia](http://julialang.org). A
-complete description of the algorithm can be found at
-http://plmdca.csc.kth.se/. If you use this algorithm, you should cite:
+Pseudo-likelihood maximization in [Julia](http://julialang.org). If you use this algorithm, you should cite:
 
 1. M. Ekeberg, C. Lovkvist, Y. Lan, M. Weigt, E. Aurell, Improved
    contact prediction in proteins: Using pseudolikelihood to infer Potts
@@ -24,16 +22,16 @@ The present software is a Julia implementation of above mentioned
 papers, with no reference to the original MATLAB
 [software](http://plmdca.csc.kth.se) implementation.
 
-The code now requires at least Julia version 1.5 or later.
+The code requires Julia version 1.5 or later.
 
 Install
 -------
 
-To install locally.
+The package is in Julia's General Registry and can be installed from the REPL by typing `]` (to enter Julia's package manager) and then:
+
 ```
-(v1.?) pkg> add https://github.com/pagnani/PlmDCA.jl
+(@v1.x) pkg> add PlmDCA
 ```
-The package is now registered and should soon appear in the General Registry. 
 
 Overview
 --------
