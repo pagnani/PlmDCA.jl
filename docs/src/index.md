@@ -44,8 +44,8 @@ at finding the value of the $J, h$ parameters, that maximize the log-likelihood:
 ${\cal L} = \frac{1}{M} \sum_{m=1}^M  \left( h_i(a^m_i) + \sum_{j\neq i}
 J_{ij}(a_i^m,a_j^m) - \log z_i(a^m_{\setminus i})\right)\,.$
 
-In machine learning, this parametrization is known as the {\em soft-max
-regression}, a generalization of logistic regression to multi-class labels.
+In machine learning, this parametrization is known as the soft-max
+regression, a generalization of logistic regression to multi-class labels.
 
 ## Usage
 
