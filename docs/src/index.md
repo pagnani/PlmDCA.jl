@@ -26,7 +26,7 @@ small probabilities. Here we propose a computationally efficient approach based
 on pseudo-likelihood maximization. 
 
 We start from the exact decomposition $P_i(a_i| a_{\setminus i})$ where
-$a_{\setminus i} := {a_1,\dots,a_{i-1},a_{i+1},\dots,a_i$, i.e. all residues of the sequence
+$a_{\setminus i} := \{a_1,\dots,a_{i-1},a_{i+1},\dots,a_i\}$, i.e. all residues of the sequence
 of amino acids but the one relative to residue $i$. 
 
 Here, we use the following parametrization:
@@ -41,7 +41,7 @@ $z_i(a_{\setminus i})= \sum_{a=1}^{q} \exp \left\{ h_i(a) + \sum_{j=1\neq i} J_{
 is the normalization factor. The pseudo-likelihood maximization strategy, aims
 at finding the value of the $J, h$ parameters, that maximize the log-likelihood:
 
-$ {\cal L} = \frac{1}{M} \sum_{m=1}^M  \left(h_i(a^m_i) + \sum_{j\neq i}
+${\cal L} = \frac{1}{M} \sum_{m=1}^M  \left( h_i(a^m_i) + \sum_{j\neq i}
 J_{ij}(a_i^m,a_j^m) - \log z_i(a^m_{\setminus i})\right)\,.$
 
 In machine learning, this parametrization is known as the {\em soft-max
