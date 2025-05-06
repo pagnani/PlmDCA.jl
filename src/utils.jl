@@ -47,8 +47,21 @@ function compute_APC(J::Array{Float64,4},N,q)
     return FN
 end
 
+"""
+    PlmDCA.read_fasta(filename; max_gap_fraction::Real, theta, remove_dups::Bool) -> W, Zint, N, M, q
 
-function read_fasta(filename::String,max_gap_fraction::Real, theta::Any, remove_dups::Bool)
+Reads a FASTA file and returns the per-sequence weights, integer representation
+of sequences, length of sequences, number of sequences, and the number of
+states.
+
+See
+[`DCAUtils.read_fasta_alignment`](https://carlobaldassi.github.io/DCAUtils.jl/stable/#DCAUtils.ReadFastaAlignment.read_fasta_alignment)
+about the integer representation of sequences and meaning of `max_gap_fraction`.
+If `remove_dups` is `true`, duplicate sequences are removed.
+
+`theta` controls the sequence-weighting computation, see [`DCAUtils.compute_weights`](https://carlobaldassi.github.io/DCAUtils.jl/stable/#DCAUtils.compute_weights).
+"""
+function read_fasta(filename::String,max_gap_fraction::Real, theta, remove_dups::Bool)
 
     Z = read_fasta_alignment(filename, max_gap_fraction)
     if remove_dups
@@ -75,7 +88,7 @@ function compute_ranking(S::Matrix{Float64}, min_separation::Int = 5)
     end
 
     sort!(R, by=x->x[3], rev=true)
-    return R 
+    return R
 end
 
 function sumexp(vec::Array{Float64,1})

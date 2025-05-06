@@ -1,5 +1,5 @@
 """
-    plmdca_asym(Z::Array{T,2},W::Vector{Float64}; kwds...) -> ::PlmOut
+    plmdca_asym(Z::Matrix{T},W::Vector{Float64}; kwds...) -> ::PlmOut
 Pseudolikelihood maximization on the M×N alignment `Z` (numerically encoded in
  1,…,21), and the `M`-dimensional normalized weight vector `W`.
 
@@ -26,9 +26,7 @@ julia> res = plmDCA(Z,W,lambdaJ=0.01,lambdaH=0.01,epsconv=1e-12);
 ```
 """
 function plmdca_asym(Z::Array{T,2}, W::Vector{Float64};
-    remove_dups::Bool=true,
     min_separation::Int=1,
-    theta=:auto,
     lambdaJ::Real=0.01,
     lambdaH::Real=0.01,
     epsconv::Real=1.0e-5,
@@ -59,7 +57,7 @@ It returns a struct `::PlmOut` containing four fields:
 1. `Jtensor`: the 4 dimensional Array (q×q×L×L)  of the couplings in zero-sum gauge J[a,b,i,j]
 2. `Htensor`: the 2 dimensional Array (q×L) of the fields in zero-sum gauge h[a,i]
 3. `pslike`: a vector of length `L` containining the log-pseudolikelihoods
-4. `score`: a vector of ``(i,j,val)::Tuple{Int,Int,Float64}` containing the DCA
+4. `score`: a vector of `(i,j,val)::Tuple{Int,Int,Float64}` containing the DCA
    score `val` relative to the `i,j` pair in descending order.
 
    Optional arguments:
@@ -70,6 +68,8 @@ It returns a struct `::PlmOut` containing four fields:
 * `maxit::Int=1000` maximum number of iteration in minimization
 * `verbose::Bool=true` set to `false` to stop printing convergence info on `stdout`
 * `method::Symbol=:LD_LBFGS` optimization strategy see [`NLopt.jl`](https://github.com/JuliaOpt/NLopt.jl) for other options
+
+See [`PlmDCA.read_fasta`](@ref) for additional parameters.
 
 # Example
 ```
@@ -86,30 +86,10 @@ function plmdca_asym(filename::String;
     println("preprocessing took $time seconds")
     plmdca_asym(Z, W; kwds...)
 end
+
 """
     plmdca(filename::String; kwds...) -> PlmOut
-Run [`plmdca_asym`](@ref) on the fasta alignment in `filename`
-It returns a struct `::PlmOut` containing four fields:
-
-1. `Jtensor`: the 4 dimensional Array (q×q×L×L)  of the couplings in zero-sum gauge J[a,b,i,j]
-2. `Htensor`: the 2 dimensional Array (q×L) of the fields in zero-sum gauge h[a,i]
-3. `pslike`: a vector of length `L` containining the log-pseudolikelihoods
-4. `score`: a vector of ``(i,j,val)::Tuple{Int,Int,Float64}` containing the DCA
-   score `val` relative to the `i,j` pair in descending order.
-
-   Optional arguments:
-
-* `lambdaJ::Real=0.01` coupling L₂ regularization parameter (lagrange multiplier)
-* `lambdaH::Real=0.01` field L₂ regularization parameter (lagrange multiplier)
-* `epsconv::Real=1.0e-5` convergence value in minimzation
-* `maxit::Int=1000` maximum number of iteration in minimization
-* `verbose::Bool=true` set to `false` to stop printing convergence info on `stdout`
-* `method::Symbol=:LD_LBFGS` optimization strategy see [`NLopt.jl`](https://github.com/JuliaOpt/NLopt.jl) for other options
-
-# Example
-```
-julia> res = plmdca_asym("data/pf00014short.fasta",lambdaJ=0.01,lambdaH=0.01,epsconv=1e-12);
-```
+Run [`plmdca_asym`](@ref) on the fasta alignment in `filename`.
 """
 plmdca(filename::String; kwds...) = plmdca_asym(filename; kwds...)
 
@@ -190,7 +170,7 @@ function fillvecene!(vecene::Vector{Float64}, x::Vector{Float64}, site::Int, Idx
     q2 = q * q
     @inbounds for l in 1:q
         scra::Float64 = 0.0
-        if site > 1 # turbo does not like iterating over an empty iterator. 
+        if site > 1 # turbo does not like iterating over an empty iterator.
             @turbo for i = 1:site-1 # Begin sum_i \neq site J
                 scra += x[IdxSeq[i]+l]
             end

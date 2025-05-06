@@ -18,16 +18,16 @@ Protein families are given in form of multiple sequence alignments (MSA) $D =
 (a^m_i |i = 1,\dots,L;\,m = 1,\dots,M)$ of $M$ proteins of aligned length $L$.
 The entries $a^m_i$ equal either one of the standard 20 amino acids, or the
 alignment gap $–$. In total, we have $q = 21$ possible different symbols in D.
-The aim of unsupervised generative modeling is to earn a statistical model
+The aim of unsupervised generative modeling is to learn a statistical model
 $P(a_1,\dots,a_L)$ of (aligned) full-length sequences, which faithfully reflects
 the variability found in $D$: sequences belonging to the protein family of
 interest should have comparably high probabilities, unrelated sequences very
 small probabilities. Here we propose a computationally efficient approach based
-on pseudo-likelihood maximization. 
+on pseudo-likelihood maximization.
 
 We start from the exact decomposition $P_i(a_i| a_{\setminus i})$ where
 $a_{\setminus i} := \{a_1,\dots,a_{i-1},a_{i+1},\dots,a_i\}$, i.e. all residues of the sequence
-of amino acids but the one relative to residue $i$. 
+of amino acids but the one relative to residue $i$.
 
 Here, we use the following parametrization:
 
@@ -53,7 +53,7 @@ The typical pipeline to use the package is:
 
 * Compute PlmDCA parameters from a multiple sequence alignment:
 
-``` 
+```
 julia> res=plmdca(filefasta; kwds...)
 ```
 
@@ -67,21 +67,21 @@ $ julia -t nthreads # put here nthreads equal to the number of cores you want to
 
 If you want to set permanently the number of threads to the desired value, you can either create a default environment variable `export JULIA_NUM_THREADS=24` in your `.bashrc`. More information [here](https://docs.julialang.org/en/v1.6/manual/multi-threading/)
 
-## Load PlmDCA package 
+## Load PlmDCA package
 
 The package is on the General Registry. It can be installed from the package
 manager by
 ```
 pkg> add PlmDCA
 ```
-and 
+and
 ```
 julia> using PlmDCA
 ```
 
 ## Learn the parameters
 
-There are two different learning strategies: 
+There are two different learning strategies:
 
 * The asymmetric one invoked by the `plmdca_asym` method (the `plmdca` method
   points to the asymmetric strategy)
@@ -93,19 +93,24 @@ Both methods return the parameters  `res::PlmOut`, a `struct` containing:
 1. `Jtensor`: the 4 dimensional Array (q×q×L×L)  of the couplings in zero-sum gauge J[a,b,i,j]
 2. `Htensor`: the 2 dimensional Array (q×L) of the fields in zero-sum gauge h[a,i]
 3. `pslike`: a vector of length `L` containing the log-pseudolikelihoods
-4. `score`: a vector of ``(i,j,val)::Tuple{Int,Int,Float64}` containing the DCA
+4. `score`: a vector of `(i,j,val)::Tuple{Int,Int,Float64}` containing the DCA
    score `val` relative to the `i,j` pair in descending order.
 
-For both methods, the keyword arguments (with their default value) are:
+For both methods, the algorithmic keyword arguments (with their default value) are:
 
 * `epsconv::Real=1.0e-5` (convergence parameter)
 * `maxit::Int=1000` (maximum number of iteration - don't change)
 * `verbose::Bool=true` (set to `false` to suppress printing on screen)
 * `method::Symbol=:LD_LBFGS` (optimization method)
 
+Example:
+
 ```
 res=plmdca("data/PF14/PF00014_mgap6.fasta.gz", verbose=false, lambdaJ=0.02,lambdaH=0.001);
 ```
+
+Additional parameters include those of [`PlmDCA.read_fasta`](@ref), which
+determine the effective sequence diversity.
 
 ## Contact Prediction
 
